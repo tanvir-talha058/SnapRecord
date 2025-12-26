@@ -60,7 +60,7 @@ The extension will be available on the Chrome Web Store soon.
 
 ## 📖 Usage
 
-### Basic Recording
+### Quick Start
 
 1. Click the SnapRecord icon in your browser toolbar
 2. Select your preferred capture type (tab, window, or screen)
@@ -68,6 +68,16 @@ The extension will be available on the Chrome Web Store soon.
 4. Select video quality
 5. Click "Start Recording"
 6. When finished, click "Stop" to save the recording
+
+### Testing the Extension
+
+Open the included `test-page.html` in your browser to test all features:
+- Animated content capture
+- Interactive canvas recording
+- Video and audio capture
+- Counter for timing
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed installation and testing instructions.
 
 ### Pause & Resume
 

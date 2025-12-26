@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapRecord Test Page</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .test-item {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+
+    .test-item h3 {
+      color: #667eea;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .test-item p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #5568d3;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #canvas {
+      width: 100%;
+      height: 200px;
+      border: 2px solid #667eea;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    #animatedBox {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 20px auto;
+      animation: float 3s ease-in-out infinite;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-30px) rotate(180deg); }
+    }
+
+    #videoPlayer {
+      width: 100%;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    .audio-controls {
+      margin-top: 15px;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .info-box {
+      background: #e8f4f8;
+      border: 1px solid #667eea;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .info-box strong {
+      color: #667eea;
+    }
+
+    ul {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+
+    li {
+      margin: 8px 0;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .counter {
+      text-align: center;
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SnapRecord Test Page</h1>
+    <p class="subtitle">Use this page to test your SnapRecord screen recording extension</p>
+
+    <div class="info-box">
+      <strong>How to use this page:</strong>
+      <ol>
+        <li>Install the SnapRecord extension in your browser</li>
+        <li>Click the SnapRecord icon in your toolbar</li>
+        <li>Select "Current Tab" to record this page</li>
+        <li>Interact with the elements below while recording</li>
+        <li>Stop the recording and check the downloaded video</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>Test 1: Animated Content</h2>
+      <div class="test-item">
+        <h3>Floating Animation</h3>
+        <p>This box continuously animates. Record it to test smooth animation capture.</p>
+        <div id="animatedBox"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Test 2: Interactive Canvas</h2>
+      <div class="test-item">
+        <h3>Drawing Canvas</h3>
+        <p>Click the button to draw random shapes. Great for testing visual clarity.</p>
+        <button onclick="drawShapes()">Draw Random Shapes</button>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Test 3: Counter</h2>
+      <div class="test-item">
+        <h3>Live Counter</h3>
+        <p>A counter that updates every second. Useful for timing your recordings.</p>
+        <div class="counter" id="counter">0</div>
+        <button onclick="startCounter()">Start Counter</button>
+        <button onclick="stopCounter()">Stop Counter</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Test 4: Video Playback</h2>
+      <div class="test-item">
+        <h3>Sample Video</h3>
+        <p>Play this video to test audio/video capture capabilities.</p>
+        <video id="videoPlayer" controls>
+          <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Test 5: Audio</h2>
+      <div class="test-item">
+        <h3>Audio Player</h3>
+        <p>Play this audio to test audio capture.</p>
+        <div class="audio-controls">
+          <button onclick="playTone(440)">Play A (440 Hz)</button>
+          <button onclick="playTone(523)">Play C (523 Hz)</button>
+          <button onclick="playTone(659)">Play E (659 Hz)</button>
+          <button onclick="stopTone()">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>Testing Checklist:</strong>
+      <ul>
+        <li>✓ Animations are smooth in the recording</li>
+        <li>✓ Canvas drawings are clearly visible</li>
+        <li>✓ Counter updates are captured</li>
+        <li>✓ Video playback is recorded (with audio if enabled)</li>
+        <li>✓ Audio tones are captured (if audio recording is enabled)</li>
+        <li>✓ Pause/Resume functionality works correctly</li>
+        <li>✓ Downloaded file plays correctly</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Canvas drawing
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 200;
+
+    function drawShapes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = 0; i < 10; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = Math.random() * 30 + 10;
+        const color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Counter
+    let counterValue = 0;
+    let counterInterval = null;
+
+    function startCounter() {
+      if (counterInterval) return;
+      counterValue = 0;
+      counterInterval = setInterval(() => {
+        counterValue++;
+        document.getElementById('counter').textContent = counterValue;
+      }, 1000);
+    }
+
+    function stopCounter() {
+      if (counterInterval) {
+        clearInterval(counterInterval);
+        counterInterval = null;
+      }
+    }
+
+    // Audio synthesis
+    let audioContext = null;
+    let oscillator = null;
+
+    function playTone(frequency) {
+      stopTone();
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      oscillator.connect(audioContext.destination);
+      oscillator.start();
+    }
+
+    function stopTone() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+    }
+
+    // Initial canvas draw
+    drawShapes();
+  </script>
+</body>
+</html>
