@@ -4,7 +4,8 @@ let isPaused = false;
 let mediaRecorder = null;
 let recordedChunks = [];
 let recordingStream = null;
-let offscreenDocumentCreated = false;
+let recordingTabId = null;
+let isContentScriptRecording = false;
 
 // Message handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -21,17 +22,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
           
         case 'pauseRecording':
-          pauseRecording();
+          await pauseRecording();
           sendResponse({ success: true });
           break;
           
         case 'resumeRecording':
-          resumeRecording();
+          await resumeRecording();
           sendResponse({ success: true });
           break;
           
         case 'stopRecording':
           await stopRecording();
+          sendResponse({ success: true });
+          break;
+          
+        case 'recordingStarted':
+          // Content script notifies us that recording started
+          isContentScriptRecording = true;
+          isRecording = true;
+          chrome.action.setBadgeText({ text: 'REC' });
+          chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
           break;
           
@@ -54,18 +64,17 @@ async function startRecording(options) {
       return { success: false, error: 'Already recording' };
     }
 
-    // Get the stream based on capture type
-    let stream;
+    // Get the current active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) {
+      throw new Error('No active tab found');
+    }
     
+    recordingTabId = tab.id;
+
+    // For tab recording, use tabCapture directly in background
     if (options.captureType === 'tab') {
-      // Get current tab
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-      
-      // Request tab capture
-      stream = await chrome.tabCapture.capture({
+      const stream = await chrome.tabCapture.capture({
         audio: options.audioEnabled,
         video: true,
         videoConstraints: {
@@ -77,135 +86,145 @@ async function startRecording(options) {
           }
         }
       });
-    } else {
-      // For window and screen capture, we need to use getDisplayMedia
-      // This requires an offscreen document in Manifest V3
-      await ensureOffscreenDocument();
       
-      // Send message to offscreen document to get the stream
-      const response = await chrome.runtime.sendMessage({
-        action: 'getDisplayMedia',
-        options: {
-          audio: options.audioEnabled,
-          video: {
-            displaySurface: options.captureType === 'window' ? 'window' : 'monitor'
-          }
-        }
+      if (!stream) {
+        throw new Error('Failed to capture tab');
+      }
+      
+      await initializeRecorder(stream, options);
+      isContentScriptRecording = false;
+      return { success: true };
+    } else {
+      // For screen/window capture, use content script
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+      } catch (err) {
+        // Script might already be injected, continue
+        console.log('Content script injection:', err.message);
+      }
+      
+      // Request display media through content script
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: 'startCapture',
+        captureType: options.captureType,
+        options: options
       });
       
       if (!response || !response.success) {
-        throw new Error(response?.error || 'Failed to get display media');
+        throw new Error(response?.error || 'Failed to start screen/window capture');
       }
       
-      stream = response.stream;
+      // Content script will handle the recording
+      isContentScriptRecording = true;
+      return { success: true };
     }
-
-    if (!stream) {
-      throw new Error('Failed to get media stream');
-    }
-
-    // Add microphone if enabled
-    if (options.micEnabled) {
-      try {
-        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const audioContext = new AudioContext();
-        const destination = audioContext.createMediaStreamDestination();
-        
-        // Mix system audio and microphone
-        if (stream.getAudioTracks().length > 0) {
-          const systemAudio = audioContext.createMediaStreamSource(stream);
-          systemAudio.connect(destination);
-        }
-        
-        const micAudio = audioContext.createMediaStreamSource(micStream);
-        micAudio.connect(destination);
-        
-        // Replace audio track with mixed audio
-        stream.getAudioTracks().forEach(track => track.stop());
-        stream.removeTrack(stream.getAudioTracks()[0]);
-        destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
-      } catch (error) {
-        console.error('Failed to add microphone:', error);
-        // Continue without microphone
-      }
-    }
-
-    recordingStream = stream;
-    recordedChunks = [];
-    
-    // Create MediaRecorder
-    const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
-      ? 'video/webm; codecs=vp9'
-      : 'video/webm';
-    
-    mediaRecorder = new MediaRecorder(stream, {
-      mimeType,
-      videoBitsPerSecond: options.quality === '1440' ? 8000000 : 
-                         options.quality === '1080' ? 5000000 : 2500000
-    });
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = async () => {
-      await saveRecording();
-    };
-
-    mediaRecorder.start(1000); // Capture data every second
-    isRecording = true;
-    isPaused = false;
-
-    // Update badge
-    chrome.action.setBadgeText({ text: 'REC' });
-    chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
-
-    return { success: true };
   } catch (error) {
     console.error('Error starting recording:', error);
+    isRecording = false;
+    isContentScriptRecording = false;
     return { success: false, error: error.message };
   }
 }
 
-// Pause recording
-function pauseRecording() {
-  if (mediaRecorder && isRecording && !isPaused) {
-    mediaRecorder.pause();
-    isPaused = true;
-    chrome.action.setBadgeText({ text: '⏸' });
-    chrome.action.setBadgeBackgroundColor({ color: '#FFA500' });
-  }
-}
+// Initialize MediaRecorder
+async function initializeRecorder(stream, options) {
+  recordedChunks = [];
+  recordingStream = stream;
+  
+  // Create MediaRecorder
+  const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
+    ? 'video/webm; codecs=vp9'
+    : 'video/webm';
+  
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: options.quality === '1440' ? 8000000 : 
+                       options.quality === '1080' ? 5000000 : 2500000
+  });
 
-// Resume recording
-function resumeRecording() {
-  if (mediaRecorder && isRecording && isPaused) {
-    mediaRecorder.resume();
-    isPaused = false;
-    chrome.action.setBadgeText({ text: 'REC' });
-    chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
-  }
-}
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      recordedChunks.push(event.data);
+    }
+  };
 
-// Stop recording
-async function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    
+  mediaRecorder.onstop = async () => {
+    await saveRecording();
     // Stop all tracks
     if (recordingStream) {
       recordingStream.getTracks().forEach(track => track.stop());
       recordingStream = null;
     }
-    
-    isRecording = false;
-    isPaused = false;
-    
-    // Clear badge
-    chrome.action.setBadgeText({ text: '' });
+  };
+
+  mediaRecorder.start(1000); // Capture data every second
+  isRecording = true;
+  isPaused = false;
+
+  // Update badge
+  chrome.action.setBadgeText({ text: 'REC' });
+  chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+}
+
+// Pause recording
+async function pauseRecording() {
+  if (isContentScriptRecording && recordingTabId) {
+    // Send pause command to content script
+    await chrome.tabs.sendMessage(recordingTabId, {
+      action: 'pauseContentRecording'
+    });
+    isPaused = true;
+  } else if (mediaRecorder && isRecording && !isPaused) {
+    mediaRecorder.pause();
+    isPaused = true;
   }
+  
+  chrome.action.setBadgeText({ text: '⏸' });
+  chrome.action.setBadgeBackgroundColor({ color: '#FFA500' });
+}
+
+// Resume recording
+async function resumeRecording() {
+  if (isContentScriptRecording && recordingTabId) {
+    // Send resume command to content script
+    await chrome.tabs.sendMessage(recordingTabId, {
+      action: 'resumeContentRecording'
+    });
+    isPaused = false;
+  } else if (mediaRecorder && isRecording && isPaused) {
+    mediaRecorder.resume();
+    isPaused = false;
+  }
+  
+  chrome.action.setBadgeText({ text: 'REC' });
+  chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+}
+
+// Stop recording
+async function stopRecording() {
+  if (isContentScriptRecording && recordingTabId) {
+    // Send stop command to content script
+    try {
+      await chrome.tabs.sendMessage(recordingTabId, {
+        action: 'stopContentRecording'
+      });
+    } catch (err) {
+      console.log('Error stopping content script recording:', err);
+    }
+    isContentScriptRecording = false;
+  } else if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+  }
+  
+  isRecording = false;
+  isPaused = false;
+  recordingTabId = null;
+  
+  // Clear badge
+  chrome.action.setBadgeText({ text: '' });
 }
 
 // Save recording
@@ -232,30 +251,6 @@ async function saveRecording() {
   // Clean up
   recordedChunks = [];
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-// Ensure offscreen document exists
-async function ensureOffscreenDocument() {
-  if (offscreenDocumentCreated) {
-    return;
-  }
-  
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT']
-  });
-  
-  if (existingContexts.length > 0) {
-    offscreenDocumentCreated = true;
-    return;
-  }
-  
-  await chrome.offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: ['USER_MEDIA'],
-    justification: 'Recording screen with audio'
-  });
-  
-  offscreenDocumentCreated = true;
 }
 
 // Clean up on extension shutdown
