@@ -8,67 +8,300 @@
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
-      <h1>SnapRecord</h1>
-      <p class="subtitle">Screen Recorder</p>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>SnapRecord</h1>
+          <p class="subtitle">Professional Screen Recorder</p>
+        </div>
+      </div>
     </div>
     
+    <!-- Status Bar -->
     <div id="recordingStatus" class="status-bar">
-      <span id="statusText">Ready to record</span>
-      <span id="timer" class="timer">00:00</span>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="statusText">Ready to record</span>
+      </div>
+      <span id="timer" class="timer">00:00:00</span>
     </div>
 
-    <div class="options-section">
-      <div class="option-group">
-        <label for="captureType">Capture:</label>
-        <select id="captureType">
-          <option value="tab">Current Tab</option>
-          <option value="window">Current Window</option>
-          <option value="screen">Entire Screen</option>
-        </select>
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="capture">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 7l-7 5 7 5V7z"/>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        <span>Capture</span>
+      </button>
+      <button class="tab-btn" data-tab="audio">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+        <span>Audio</span>
+      </button>
+      <button class="tab-btn" data-tab="output">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        <span>Output</span>
+      </button>
+    </div>
+
+    <!-- Tab Contents -->
+    <div class="tab-contents">
+      <!-- Capture Tab -->
+      <div class="tab-content active" id="tab-capture">
+        <div class="option-group">
+          <label for="captureType">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            Capture Source
+          </label>
+          <select id="captureType">
+            <option value="screen">Entire Screen</option>
+            <option value="window">Application Window</option>
+            <option value="tab">Browser Tab</option>
+          </select>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="cameraEnabled">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="label-text">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              Camera Overlay
+            </span>
+          </label>
+        </div>
+
+        <div id="cameraSettings" class="collapsible-section" style="display: none;">
+          <div class="option-row">
+            <div class="option-group half">
+              <label for="cameraPosition">Position</label>
+              <select id="cameraPosition">
+                <option value="bottom-right">Bottom Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="top-left">Top Left</option>
+              </select>
+            </div>
+            <div class="option-group half">
+              <label for="cameraSize">Size</label>
+              <select id="cameraSize">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+          <div class="option-group">
+            <label>Shape</label>
+            <div class="shape-options">
+              <label class="shape-option">
+                <input type="radio" name="cameraShape" value="circle" checked>
+                <span class="shape-preview circle"></span>
+                <span>Circle</span>
+              </label>
+              <label class="shape-option">
+                <input type="radio" name="cameraShape" value="rounded">
+                <span class="shape-preview rounded"></span>
+                <span>Rounded</span>
+              </label>
+              <label class="shape-option">
+                <input type="radio" name="cameraShape" value="square">
+                <span class="shape-preview square"></span>
+                <span>Square</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="option-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="audioEnabled" checked>
-          <span>Include Audio</span>
-        </label>
+      <!-- Audio Tab -->
+      <div class="tab-content" id="tab-audio">
+        <div class="option-group">
+          <label class="checkbox-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="audioEnabled" checked>
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="label-text">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+              System Audio
+            </span>
+          </label>
+          <p class="option-hint">Capture sound from the screen</p>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="micEnabled">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="label-text">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+              Microphone
+            </span>
+          </label>
+          <p class="option-hint">Record your voice</p>
+        </div>
+
+        <div id="micSettings" class="collapsible-section" style="display: none;">
+          <div class="option-group">
+            <label for="micDevice">Microphone Device</label>
+            <select id="micDevice">
+              <option value="default">Default Microphone</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div class="option-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="micEnabled">
-          <span>Include Microphone</span>
-        </label>
-      </div>
+      <!-- Output Tab -->
+      <div class="tab-content" id="tab-output">
+        <div class="option-group">
+          <label for="quality">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            Video Quality
+          </label>
+          <select id="quality">
+            <option value="480">480p (SD) - Smallest file</option>
+            <option value="720">720p (HD) - Balanced</option>
+            <option value="1080" selected>1080p (Full HD) - Recommended</option>
+            <option value="1440">1440p (2K) - High quality</option>
+            <option value="2160">2160p (4K) - Ultra HD</option>
+          </select>
+        </div>
 
-      <div class="option-group">
-        <label for="quality">Quality:</label>
-        <select id="quality">
-          <option value="720">720p</option>
-          <option value="1080" selected>1080p</option>
-          <option value="1440">1440p</option>
-        </select>
+        <div class="option-group">
+          <label for="frameRate">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="7" y2="7"/>
+              <line x1="2" y1="17" x2="7" y2="17"/>
+              <line x1="17" y1="17" x2="22" y2="17"/>
+              <line x1="17" y1="7" x2="22" y2="7"/>
+            </svg>
+            Frame Rate
+          </label>
+          <select id="frameRate">
+            <option value="24">24 FPS - Cinematic</option>
+            <option value="30" selected>30 FPS - Standard</option>
+            <option value="60">60 FPS - Smooth</option>
+          </select>
+        </div>
+
+        <div class="option-group">
+          <label for="format">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Output Format
+          </label>
+          <select id="format">
+            <option value="webm-vp9">WebM (VP9) - Best quality</option>
+            <option value="webm-vp8">WebM (VP8) - Compatible</option>
+            <option value="webm-h264">WebM (H.264) - Universal</option>
+            <option value="mp4">MP4 - Most compatible</option>
+            <option value="gif">GIF - Animated image</option>
+          </select>
+        </div>
+
+        <div class="quality-preview">
+          <div class="preview-item">
+            <span class="preview-label">Est. file size (1 min)</span>
+            <span id="fileSizeEstimate" class="preview-value">~15 MB</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-label">Resolution</span>
+            <span id="resolutionPreview" class="preview-value">1920 × 1080</span>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- Controls -->
     <div class="controls">
       <button id="startBtn" class="btn btn-start">
-        <span class="icon">⏺</span> Start Recording
+        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+        <span class="btn-text">Start Recording</span>
       </button>
-      <button id="pauseBtn" class="btn btn-pause" disabled>
-        <span class="icon">⏸</span> Pause
-      </button>
-      <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;">
-        <span class="icon">▶</span> Resume
-      </button>
-      <button id="stopBtn" class="btn btn-stop" disabled>
-        <span class="icon">⏹</span> Stop
-      </button>
+      <div class="control-row">
+        <button id="pauseBtn" class="btn btn-pause" disabled>
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"/>
+            <rect x="14" y="4" width="4" height="16"/>
+          </svg>
+          <span class="btn-text">Pause</span>
+        </button>
+        <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;">
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span class="btn-text">Resume</span>
+        </button>
+        <button id="stopBtn" class="btn btn-stop" disabled>
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+          <span class="btn-text">Stop</span>
+        </button>
+      </div>
     </div>
 
+    <!-- Footer -->
     <div class="footer">
-      <a href="options.html" target="_blank" class="settings-link">⚙ Settings</a>
+      <a href="options.html" target="_blank" class="settings-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Advanced Settings
+      </a>
+      <span class="version">v1.0.0</span>
     </div>
   </div>
   <script src="popup.js"></script>

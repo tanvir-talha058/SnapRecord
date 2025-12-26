@@ -73,57 +73,56 @@ async function startRecording(options) {
       throw new Error('No active tab found');
     }
     
+    // Check if we can inject into this tab
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || 
+        tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
+      throw new Error('Cannot record browser internal pages. Please navigate to a regular webpage.');
+    }
+    
     recordingTabId = tab.id;
 
-    // For tab recording, use tabCapture directly in background
-    if (options.captureType === 'tab') {
-      const stream = await chrome.tabCapture.capture({
-        audio: options.audioEnabled,
-        video: true,
-        videoConstraints: {
-          mandatory: {
-            minWidth: 1280,
-            minHeight: 720,
-            maxWidth: options.quality === '1440' ? 2560 : options.quality === '1080' ? 1920 : 1280,
-            maxHeight: options.quality === '1440' ? 1440 : options.quality === '1080' ? 1080 : 720,
-          }
-        }
+    // Inject content script for all capture types
+    // In Manifest V3, chrome.tabCapture.capture() is not available in service workers
+    // So we use getDisplayMedia in the content script for all capture types
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
       });
-      
-      if (!stream) {
-        throw new Error('Failed to capture tab');
-      }
-      
-      await initializeRecorder(stream, options);
-      isContentScriptRecording = false;
-      return { success: true };
-    } else {
-      // For screen/window capture, use content script
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content.js']
-        });
-      } catch (err) {
-        // Script might already be injected, continue
-        console.log('Content script injection:', err.message);
-      }
-      
-      // Request display media through content script
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'startCapture',
-        captureType: options.captureType,
-        options: options
-      });
-      
-      if (!response || !response.success) {
-        throw new Error(response?.error || 'Failed to start screen/window capture');
-      }
-      
-      // Content script will handle the recording
-      isContentScriptRecording = true;
-      return { success: true };
+      // Small delay to ensure the script is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (err) {
+      console.error('Content script injection error:', err);
+      throw new Error('Failed to inject content script. Make sure you are on a regular webpage.');
     }
+    
+    // Request display media through content script with retry
+    let response;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, {
+          action: 'startCapture',
+          captureType: options.captureType,
+          options: options
+        });
+        break;
+      } catch (err) {
+        retries--;
+        if (retries === 0) {
+          throw new Error('Failed to communicate with content script. Please refresh the page and try again.');
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    if (!response || !response.success) {
+      throw new Error(response?.error || 'Failed to start capture');
+    }
+    
+    // Content script will handle the recording
+    isContentScriptRecording = true;
+    return { success: true };
   } catch (error) {
     console.error('Error starting recording:', error);
     isRecording = false;
@@ -174,15 +173,16 @@ async function initializeRecorder(stream, options) {
 
 // Pause recording
 async function pauseRecording() {
-  if (isContentScriptRecording && recordingTabId) {
+  if (recordingTabId) {
     // Send pause command to content script
-    await chrome.tabs.sendMessage(recordingTabId, {
-      action: 'pauseContentRecording'
-    });
-    isPaused = true;
-  } else if (mediaRecorder && isRecording && !isPaused) {
-    mediaRecorder.pause();
-    isPaused = true;
+    try {
+      await chrome.tabs.sendMessage(recordingTabId, {
+        action: 'pauseContentRecording'
+      });
+      isPaused = true;
+    } catch (err) {
+      console.log('Error pausing recording:', err);
+    }
   }
   
   chrome.action.setBadgeText({ text: '⏸' });
@@ -191,15 +191,16 @@ async function pauseRecording() {
 
 // Resume recording
 async function resumeRecording() {
-  if (isContentScriptRecording && recordingTabId) {
+  if (recordingTabId) {
     // Send resume command to content script
-    await chrome.tabs.sendMessage(recordingTabId, {
-      action: 'resumeContentRecording'
-    });
-    isPaused = false;
-  } else if (mediaRecorder && isRecording && isPaused) {
-    mediaRecorder.resume();
-    isPaused = false;
+    try {
+      await chrome.tabs.sendMessage(recordingTabId, {
+        action: 'resumeContentRecording'
+      });
+      isPaused = false;
+    } catch (err) {
+      console.log('Error resuming recording:', err);
+    }
   }
   
   chrome.action.setBadgeText({ text: 'REC' });
@@ -208,8 +209,8 @@ async function resumeRecording() {
 
 // Stop recording
 async function stopRecording() {
-  if (isContentScriptRecording && recordingTabId) {
-    // Send stop command to content script
+  if (recordingTabId) {
+    // Send stop command to content script (handles both recording and camera cleanup)
     try {
       await chrome.tabs.sendMessage(recordingTabId, {
         action: 'stopContentRecording'
@@ -217,11 +218,9 @@ async function stopRecording() {
     } catch (err) {
       console.log('Error stopping content script recording:', err);
     }
-    isContentScriptRecording = false;
-  } else if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
   }
   
+  isContentScriptRecording = false;
   isRecording = false;
   isPaused = false;
   recordingTabId = null;
