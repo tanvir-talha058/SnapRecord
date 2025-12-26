@@ -188,6 +188,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateUI();
     timerElement.textContent = '00:00:00';
   }
+  return true; // Keep message channel open for async responses
 });
 
 // Format time for timer display

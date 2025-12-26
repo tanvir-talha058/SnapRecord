@@ -57,11 +57,3 @@ saveBtn.addEventListener('click', saveSettings);
 
 // Load settings on page load
 document.addEventListener('DOMContentLoaded', loadSettings);
-
-// Auto-save on change (optional)
-[defaultMode, defaultMicrophone, defaultSystemAudio, videoQuality, maxFrameRate, autoDownload].forEach(element => {
-  element.addEventListener('change', () => {
-    // You can enable auto-save by uncommenting the line below
-    // saveSettings();
-  });
-});

@@ -40,6 +40,11 @@ async function startRecording(mode, includeMicrophone, includeSystemAudio) {
     isRecording = true;
     isPaused = false;
 
+    // Get video quality settings
+    const settings = await chrome.storage.local.get(['videoQuality', 'maxFrameRate']);
+    const videoBitrate = getVideoBitrate(settings.videoQuality || 'medium');
+    const frameRate = parseInt(settings.maxFrameRate || '30');
+
     // Get screen stream based on mode
     let screenStream;
     
@@ -52,7 +57,7 @@ async function startRecording(mode, includeMicrophone, includeSystemAudio) {
       });
     } else {
       // For screen or window capture, use desktopCapture
-      screenStream = await getDesktopStream(mode, includeSystemAudio);
+      screenStream = await getDesktopStream(mode, includeSystemAudio, frameRate);
     }
 
     if (!screenStream) {
@@ -103,7 +108,7 @@ async function startRecording(mode, includeMicrophone, includeSystemAudio) {
     // Set up MediaRecorder
     const options = {
       mimeType: 'video/webm;codecs=vp9,opus',
-      videoBitsPerSecond: 2500000 // 2.5 Mbps for good quality
+      videoBitsPerSecond: videoBitrate
     };
 
     // Fallback to vp8 if vp9 is not supported
@@ -146,8 +151,19 @@ async function startRecording(mode, includeMicrophone, includeSystemAudio) {
   }
 }
 
+// Get video bitrate based on quality setting
+function getVideoBitrate(quality) {
+  const bitrates = {
+    'low': 1000000,      // 1 Mbps
+    'medium': 2500000,   // 2.5 Mbps
+    'high': 5000000,     // 5 Mbps
+    'ultra': 8000000     // 8 Mbps
+  };
+  return bitrates[quality] || bitrates['medium'];
+}
+
 // Get desktop stream using desktopCapture API
-function getDesktopStream(mode, includeSystemAudio) {
+function getDesktopStream(mode, includeSystemAudio, frameRate = 30) {
   return new Promise((resolve, reject) => {
     const sources = mode === 'screen' ? ['screen'] : ['window'];
     
@@ -167,7 +183,7 @@ function getDesktopStream(mode, includeSystemAudio) {
           chromeMediaSourceId: streamId,
           width: { max: 1920 },
           height: { max: 1080 },
-          frameRate: { max: 30 }
+          frameRate: { max: frameRate }
         }
       })
       .then(stream => resolve(stream))
@@ -264,6 +280,11 @@ function saveRecording() {
     filename: filename,
     saveAs: true
   }, (downloadId) => {
+    // Revoke the object URL to free up memory
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+    
     if (chrome.runtime.lastError) {
       console.error('Download error:', chrome.runtime.lastError);
     } else {
