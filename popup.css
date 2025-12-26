@@ -237,3 +237,19 @@ body {
   opacity: 1;
   text-decoration: underline;
 }
+
+.error-message {
+  display: none;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: center;
+  border: 1px solid #fca5a5;
+}
+
+.error-message.show {
+  display: block;
+}

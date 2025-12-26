@@ -4,6 +4,8 @@ let recordedChunks = [];
 let isRecording = false;
 let isPaused = false;
 let recordingStartTime = null;
+let pausedDuration = 0;
+let lastPauseTime = null;
 let timerInterval = null;
 let currentStream = null;
 
@@ -132,6 +134,8 @@ async function startRecording(mode, includeMicrophone, includeSystemAudio) {
 
     // Start timer
     recordingStartTime = Date.now();
+    pausedDuration = 0;
+    lastPauseTime = null;
     startTimer();
 
     console.log('Recording started successfully');
@@ -155,19 +159,15 @@ function getDesktopStream(mode, includeSystemAudio) {
 
       navigator.mediaDevices.getUserMedia({
         audio: includeSystemAudio ? {
-          mandatory: {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: streamId
-          }
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: streamId
         } : false,
         video: {
-          mandatory: {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: streamId,
-            maxWidth: 1920,
-            maxHeight: 1080,
-            maxFrameRate: 30
-          }
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: streamId,
+          width: { max: 1920 },
+          height: { max: 1080 },
+          frameRate: { max: 30 }
         }
       })
       .then(stream => resolve(stream))
@@ -198,6 +198,7 @@ function pauseRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     mediaRecorder.pause();
     isPaused = true;
+    lastPauseTime = Date.now();
     stopTimer();
   }
 }
@@ -207,6 +208,10 @@ function resumeRecording() {
   if (mediaRecorder && mediaRecorder.state === 'paused') {
     mediaRecorder.resume();
     isPaused = false;
+    if (lastPauseTime) {
+      pausedDuration += Date.now() - lastPauseTime;
+      lastPauseTime = null;
+    }
     startTimer();
   }
 }
@@ -217,7 +222,9 @@ function startTimer() {
   
   timerInterval = setInterval(() => {
     if (!isPaused) {
-      const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+      const totalElapsed = Date.now() - recordingStartTime;
+      const activeTime = totalElapsed - pausedDuration;
+      const elapsed = Math.floor(activeTime / 1000);
       chrome.runtime.sendMessage({ 
         action: 'updateTimer', 
         seconds: elapsed 
@@ -276,6 +283,8 @@ function cleanup() {
   recordedChunks = [];
   isRecording = false;
   isPaused = false;
+  pausedDuration = 0;
+  lastPauseTime = null;
   
   stopTimer();
 }

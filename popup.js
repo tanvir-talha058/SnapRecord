@@ -11,6 +11,7 @@ const resumeBtn = document.getElementById('resumeBtn');
 const statusSection = document.getElementById('statusSection');
 const statusText = document.getElementById('statusText');
 const timerElement = document.getElementById('timer');
+const errorMessage = document.getElementById('errorMessage');
 
 let selectedMode = 'screen';
 let isRecording = false;
@@ -67,6 +68,15 @@ function savePreferences() {
 microphoneCheck.addEventListener('change', savePreferences);
 systemAudioCheck.addEventListener('change', savePreferences);
 
+// Show error message helper
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.classList.add('show');
+  setTimeout(() => {
+    errorMessage.classList.remove('show');
+  }, 5000);
+}
+
 // Start recording
 startBtn.addEventListener('click', async () => {
   try {
@@ -82,11 +92,11 @@ startBtn.addEventListener('click', async () => {
       isPaused = false;
       updateUI();
     } else {
-      alert('Failed to start recording: ' + (response?.error || 'Unknown error'));
+      showError('Failed to start recording: ' + (response?.error || 'Unknown error'));
     }
   } catch (error) {
     console.error('Error starting recording:', error);
-    alert('Failed to start recording. Please try again.');
+    showError('Failed to start recording. Please try again.');
   }
 });
 
