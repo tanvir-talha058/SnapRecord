@@ -1,3 +1,6 @@
+// Import utility functions
+importScripts('utils.js');
+
 // Recording state
 let isRecording = false;
 let isPaused = false;
@@ -238,8 +241,7 @@ async function saveRecording() {
   const url = URL.createObjectURL(blob);
   
   // Generate filename with timestamp
-  const date = new Date();
-  const filename = `SnapRecord_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}-${String(date.getSeconds()).padStart(2, '0')}.webm`;
+  const filename = generateRecordingFilename();
   
   // Download the file
   await chrome.downloads.download({
