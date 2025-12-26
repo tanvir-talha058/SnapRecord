@@ -1,0 +1,32 @@
+# Development files
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Build artifacts (if any in future)
+dist/
+build/
+
+# Node modules (if any in future)
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Icons generation script (keep the icons, not the script)
+icons/generate_icons.sh

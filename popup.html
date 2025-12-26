@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapRecord</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>SnapRecord</h1>
+      <p class="subtitle">Screen Recorder</p>
+    </div>
+    
+    <div id="recordingStatus" class="status-bar">
+      <span id="statusText">Ready to record</span>
+      <span id="timer" class="timer">00:00</span>
+    </div>
+
+    <div class="options-section">
+      <div class="option-group">
+        <label for="captureType">Capture:</label>
+        <select id="captureType">
+          <option value="tab">Current Tab</option>
+          <option value="window">Current Window</option>
+          <option value="screen">Entire Screen</option>
+        </select>
+      </div>
+
+      <div class="option-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="audioEnabled" checked>
+          <span>Include Audio</span>
+        </label>
+      </div>
+
+      <div class="option-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="micEnabled">
+          <span>Include Microphone</span>
+        </label>
+      </div>
+
+      <div class="option-group">
+        <label for="quality">Quality:</label>
+        <select id="quality">
+          <option value="720">720p</option>
+          <option value="1080" selected>1080p</option>
+          <option value="1440">1440p</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="btn btn-start">
+        <span class="icon">⏺</span> Start Recording
+      </button>
+      <button id="pauseBtn" class="btn btn-pause" disabled>
+        <span class="icon">⏸</span> Pause
+      </button>
+      <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;">
+        <span class="icon">▶</span> Resume
+      </button>
+      <button id="stopBtn" class="btn btn-stop" disabled>
+        <span class="icon">⏹</span> Stop
+      </button>
+    </div>
+
+    <div class="footer">
+      <a href="options.html" target="_blank" class="settings-link">⚙ Settings</a>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
