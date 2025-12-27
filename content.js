@@ -216,6 +216,59 @@ function removeCameraOverlay() {
   }
 }
 
+// Recording indicator on screen
+let recordingIndicator = null;
+
+function createRecordingIndicator() {
+  removeRecordingIndicator();
+  
+  const indicator = document.createElement('div');
+  indicator.id = 'snaprecord-recording-indicator';
+  indicator.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 12px; height: 12px; background: #ff4444; border-radius: 50%; animation: snaprecord-pulse 1s infinite;"></div>
+      <span style="font-weight: 500;">Recording</span>
+    </div>
+  `;
+  indicator.style.cssText = `
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    z-index: 2147483647;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  `;
+  
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.id = 'snaprecord-indicator-styles';
+  style.textContent = `
+    @keyframes snaprecord-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(indicator);
+  recordingIndicator = indicator;
+}
+
+function removeRecordingIndicator() {
+  if (recordingIndicator) {
+    recordingIndicator.remove();
+    recordingIndicator = null;
+  }
+  const style = document.getElementById('snaprecord-indicator-styles');
+  if (style) style.remove();
+}
+
 async function startCamera(options) {
   try {
     const videoElement = createCameraOverlay(options);
@@ -306,6 +359,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'stopContentRecording') {
+    removeRecordingIndicator();
     if (!recorder) {
       // Already stopped, clean up camera overlay anyway
       removeCameraOverlay();
@@ -339,7 +393,11 @@ async function handleStartCapture(captureType, options) {
 
     // Start camera overlay if enabled
     if (options.cameraEnabled) {
-      await startCamera(options);
+      try {
+        await startCamera(options);
+      } catch (camError) {
+        console.warn('Camera access denied, continuing without camera:', camError);
+      }
     }
 
     // Resolution settings based on quality
@@ -366,11 +424,42 @@ async function handleStartCapture(captureType, options) {
     };
 
     // Get display media stream
-    currentStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+    try {
+      currentStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+    } catch (displayError) {
+      // User cancelled or error - clean up camera overlay
+      removeCameraOverlay();
+      throw displayError;
+    }
 
     if (!currentStream) {
+      removeCameraOverlay();
       throw new Error('Failed to get display media stream');
     }
+
+    // Add microphone audio if enabled
+    if (options.micEnabled) {
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const micTrack = micStream.getAudioTracks()[0];
+        if (micTrack) {
+          currentStream.addTrack(micTrack);
+        }
+      } catch (micError) {
+        console.warn('Microphone access denied, continuing without mic:', micError);
+      }
+    }
+
+    // Handle stream ending (user clicks "Stop sharing")
+    currentStream.getVideoTracks()[0].addEventListener('ended', () => {
+      const recorder = window.__snapRecordMediaRecorder;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      removeCameraOverlay();
+      removeRecordingIndicator();
+      chrome.runtime.sendMessage({ action: 'stopRecording' }).catch(() => {});
+    });
 
     // Since we can't easily transfer MediaStream between contexts in Manifest V3,
     // we'll create a MediaRecorder here in the content script and send chunks to background
@@ -379,6 +468,7 @@ async function handleStartCapture(captureType, options) {
     return { success: true, message: 'Recording started in content script' };
   } catch (error) {
     console.error('Error capturing display:', error);
+    removeCameraOverlay();
     return { success: false, error: error.message };
   }
 }
@@ -456,6 +546,9 @@ function startRecordingInContent(stream, options) {
   };
 
   mediaRecorder.onstop = async () => {
+    // Remove recording indicator
+    removeRecordingIndicator();
+    
     const blob = new Blob(recordedChunks, { type: mimeType });
     
     // Create download link
@@ -477,10 +570,16 @@ function startRecordingInContent(stream, options) {
     
     // Stop all tracks
     stream.getTracks().forEach(track => track.stop());
+    
+    // Clean up camera overlay
+    removeCameraOverlay();
   };
 
   // Store recorder reference for pause/resume/stop
   window.__snapRecordMediaRecorder = mediaRecorder;
+  
+  // Show recording indicator
+  createRecordingIndicator();
   
   // Start recording
   mediaRecorder.start(1000);
