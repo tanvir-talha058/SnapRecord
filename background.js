@@ -9,6 +9,9 @@ let recordedChunks = [];
 let recordingStream = null;
 let recordingTabId = null;
 let isContentScriptRecording = false;
+let recordingStartTime = 0;
+let pausedDuration = 0;
+let pauseStartTime = 0;
 
 // Message handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -16,7 +19,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       switch (request.action) {
         case 'getRecordingState':
-          sendResponse({ isRecording, isPaused });
+          sendResponse({ 
+            isRecording, 
+            isPaused, 
+            recordingStartTime,
+            pausedDuration: isPaused ? pausedDuration + (Date.now() - pauseStartTime) : pausedDuration
+          });
           break;
           
         case 'startRecording':
@@ -43,6 +51,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // Content script notifies us that recording started
           isContentScriptRecording = true;
           isRecording = true;
+          recordingStartTime = Date.now();
+          pausedDuration = 0;
+          pauseStartTime = 0;
           chrome.action.setBadgeText({ text: 'REC' });
           chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
@@ -81,24 +92,36 @@ async function startRecording(options) {
     
     recordingTabId = tab.id;
 
-    // Inject content script for all capture types
-    // In Manifest V3, chrome.tabCapture.capture() is not available in service workers
-    // So we use getDisplayMedia in the content script for all capture types
+    // Ensure content script is injected and ready
+    // First try to ping the content script to see if it's already loaded
+    let contentScriptReady = false;
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content.js']
-      });
-      // Small delay to ensure the script is fully loaded
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const pingResponse = await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
+      contentScriptReady = pingResponse && pingResponse.ready;
     } catch (err) {
-      console.error('Content script injection error:', err);
-      throw new Error('Failed to inject content script. Make sure you are on a regular webpage.');
+      // Content script not loaded yet, need to inject
+      contentScriptReady = false;
+    }
+    
+    // If content script is not ready, inject it
+    if (!contentScriptReady) {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+        // Wait for script to initialize
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (err) {
+        console.error('Content script injection error:', err);
+        throw new Error('Failed to inject content script. Make sure you are on a regular webpage.');
+      }
     }
     
     // Request display media through content script with retry
     let response;
-    let retries = 3;
+    let retries = 5;
+    let lastError;
     while (retries > 0) {
       try {
         response = await chrome.tabs.sendMessage(tab.id, {
@@ -106,14 +129,19 @@ async function startRecording(options) {
           captureType: options.captureType,
           options: options
         });
-        break;
+        if (response) break;
       } catch (err) {
-        retries--;
-        if (retries === 0) {
-          throw new Error('Failed to communicate with content script. Please refresh the page and try again.');
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        lastError = err;
+        console.log(`Retry ${6 - retries}/5 - Content script communication failed:`, err.message);
       }
+      retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    if (!response) {
+      throw new Error(lastError?.message || 'Failed to communicate with content script. Please refresh the page and try again.');
     }
     
     if (!response || !response.success) {
@@ -180,6 +208,7 @@ async function pauseRecording() {
         action: 'pauseContentRecording'
       });
       isPaused = true;
+      pauseStartTime = Date.now();
     } catch (err) {
       console.log('Error pausing recording:', err);
     }
@@ -197,6 +226,11 @@ async function resumeRecording() {
       await chrome.tabs.sendMessage(recordingTabId, {
         action: 'resumeContentRecording'
       });
+      // Add the paused time to the total paused duration
+      if (pauseStartTime > 0) {
+        pausedDuration += Date.now() - pauseStartTime;
+        pauseStartTime = 0;
+      }
       isPaused = false;
     } catch (err) {
       console.log('Error resuming recording:', err);
@@ -224,6 +258,9 @@ async function stopRecording() {
   isRecording = false;
   isPaused = false;
   recordingTabId = null;
+  recordingStartTime = 0;
+  pausedDuration = 0;
+  pauseStartTime = 0;
   
   // Clear badge
   chrome.action.setBadgeText({ text: '' });

@@ -152,8 +152,19 @@ function updateQualityPreview() {
 chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
   if (response && response.isRecording) {
     updateUIForRecording();
-    if (response.isPaused) {
-      updateUIForPaused();
+    
+    // Restore timer from background state
+    if (response.recordingStartTime) {
+      const elapsed = Date.now() - response.recordingStartTime - (response.pausedDuration || 0);
+      startTime = Date.now() - elapsed;
+      pausedTime = 0;
+      
+      if (response.isPaused) {
+        pausedTime = elapsed;
+        updateUIForPaused();
+      } else {
+        startTimer();
+      }
     }
   }
 });

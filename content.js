@@ -1,6 +1,13 @@
 // Content script for screen/window capture
 // This runs in the context of web pages and has access to navigator.mediaDevices
 
+// Prevent multiple injections
+if (window.__snapRecordContentScriptLoaded) {
+  console.log('SnapRecord content script already loaded');
+} else {
+  window.__snapRecordContentScriptLoaded = true;
+}
+
 let currentStream = null;
 let cameraStream = null;
 let cameraOverlay = null;
