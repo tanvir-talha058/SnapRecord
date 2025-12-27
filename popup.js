@@ -16,6 +16,7 @@ const cameraPosition = document.getElementById('cameraPosition');
 const cameraSize = document.getElementById('cameraSize');
 const frameRate = document.getElementById('frameRate');
 const format = document.getElementById('format');
+const countdownSeconds = document.getElementById('countdownSeconds');
 const fileSizeEstimate = document.getElementById('fileSizeEstimate');
 const resolutionPreview = document.getElementById('resolutionPreview');
 const micSettings = document.getElementById('micSettings');
@@ -29,11 +30,15 @@ let isPaused = false;
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     // Remove active from all tabs and contents
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
     // Add active to clicked tab and corresponding content
     btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
   });
 });
@@ -54,7 +59,7 @@ function setCameraShape(value) {
 chrome.storage.sync.get([
   'captureType', 'audioEnabled', 'micEnabled', 'quality', 
   'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
-  'frameRate', 'format'
+  'frameRate', 'format', 'countdownSeconds'
 ], (result) => {
   if (result.captureType) captureType.value = result.captureType;
   if (result.audioEnabled !== undefined) audioEnabled.checked = result.audioEnabled;
@@ -69,6 +74,7 @@ chrome.storage.sync.get([
   if (result.cameraShape) setCameraShape(result.cameraShape);
   if (result.frameRate) frameRate.value = result.frameRate;
   if (result.format) format.value = result.format;
+  if (result.countdownSeconds !== undefined) countdownSeconds.value = result.countdownSeconds;
   
   updateQualityPreview();
 });
@@ -85,12 +91,13 @@ function saveSettings() {
     cameraSize: cameraSize.value,
     cameraShape: getCameraShape(),
     frameRate: frameRate.value,
-    format: format.value
+    format: format.value,
+    countdownSeconds: countdownSeconds.value
   });
 }
 
 // Save settings on change for all elements
-[captureType, audioEnabled, micEnabled, quality, cameraPosition, cameraSize, frameRate, format].forEach(element => {
+[captureType, audioEnabled, micEnabled, quality, cameraPosition, cameraSize, frameRate, format, countdownSeconds].forEach(element => {
   element.addEventListener('change', () => {
     saveSettings();
     updateQualityPreview();
@@ -111,8 +118,51 @@ cameraEnabled.addEventListener('change', () => {
 // Toggle mic settings visibility
 micEnabled.addEventListener('change', () => {
   micSettings.style.display = micEnabled.checked ? 'block' : 'none';
+  if (micEnabled.checked) {
+    populateMicrophoneDevices();
+  }
   saveSettings();
 });
+
+// Populate microphone devices
+const micDevice = document.getElementById('micDevice');
+
+async function populateMicrophoneDevices() {
+  try {
+    // Request permission first to get device labels
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audioInputs = devices.filter(device => device.kind === 'audioinput');
+    
+    micDevice.innerHTML = '<option value="default">Default Microphone</option>';
+    
+    audioInputs.forEach((device, index) => {
+      const option = document.createElement('option');
+      option.value = device.deviceId;
+      option.textContent = device.label || `Microphone ${index + 1}`;
+      micDevice.appendChild(option);
+    });
+    
+    // Load saved device
+    chrome.storage.sync.get(['micDeviceId'], (result) => {
+      if (result.micDeviceId) {
+        micDevice.value = result.micDeviceId;
+      }
+    });
+  } catch (error) {
+    console.log('Could not enumerate microphones:', error);
+  }
+}
+
+// Save mic device selection
+micDevice.addEventListener('change', () => {
+  chrome.storage.sync.set({ micDeviceId: micDevice.value });
+});
+
+// Initial population if mic is enabled
+if (micEnabled.checked) {
+  populateMicrophoneDevices();
+}
 
 // Update quality preview
 function updateQualityPreview() {
@@ -154,7 +204,7 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
     updateUIForRecording();
     
     // Restore timer from background state
-    if (response.recordingStartTime) {
+    if (response.recordingStartTime && response.recordingStartTime > 0) {
       const elapsed = Date.now() - response.recordingStartTime - (response.pausedDuration || 0);
       startTime = Date.now() - elapsed;
       pausedTime = 0;
@@ -165,6 +215,11 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
       } else {
         startTimer();
       }
+    } else {
+      // Recording just started, start fresh timer
+      startTime = Date.now();
+      pausedTime = 0;
+      startTimer();
     }
   }
 });
@@ -184,18 +239,35 @@ startBtn.addEventListener('click', async () => {
     captureType: captureType.value,
     audioEnabled: audioEnabled.checked,
     micEnabled: micEnabled.checked,
+    micDeviceId: micDevice.value,
     quality: quality.value,
     cameraEnabled: cameraEnabled.checked,
     cameraPosition: cameraPosition.value,
     cameraSize: cameraSize.value,
     cameraShape: getCameraShape(),
     frameRate: frameRate.value,
-    format: format.value
+    format: format.value,
+    countdownSeconds: parseInt(countdownSeconds.value) || 0
   };
 
   try {
     startBtn.disabled = true;
     startBtn.innerHTML = ICONS.loading + '<span class="btn-text">Starting...</span>';
+    
+    // Show countdown if enabled
+    const countdown = parseInt(countdownSeconds.value) || 0;
+    if (countdown > 0) {
+      // Get the current tab and show countdown
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && !tab.url.startsWith('chrome://')) {
+        startBtn.innerHTML = ICONS.loading + '<span class="btn-text">Countdown...</span>';
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: 'showCountdown', seconds: countdown });
+        } catch (err) {
+          console.log('Could not show countdown:', err);
+        }
+      }
+    }
     
     const response = await chrome.runtime.sendMessage({ 
       action: 'startRecording', 
@@ -221,43 +293,59 @@ startBtn.addEventListener('click', async () => {
 // Pause recording
 pauseBtn.addEventListener('click', async () => {
   try {
+    pauseBtn.disabled = true;
     const response = await chrome.runtime.sendMessage({ action: 'pauseRecording' });
     if (response && response.success) {
       updateUIForPaused();
+    } else {
+      console.error('Pause failed:', response?.error);
+      pauseBtn.disabled = false;
     }
   } catch (error) {
     console.error('Error pausing recording:', error);
+    pauseBtn.disabled = false;
   }
 });
 
 // Resume recording
 resumeBtn.addEventListener('click', async () => {
   try {
+    resumeBtn.disabled = true;
     const response = await chrome.runtime.sendMessage({ action: 'resumeRecording' });
     if (response && response.success) {
       updateUIForResumed();
+    } else {
+      console.error('Resume failed:', response?.error);
+      resumeBtn.disabled = false;
     }
   } catch (error) {
     console.error('Error resuming recording:', error);
+    resumeBtn.disabled = false;
   }
 });
 
 // Stop recording
 stopBtn.addEventListener('click', async () => {
   try {
+    stopBtn.disabled = true;
     const response = await chrome.runtime.sendMessage({ action: 'stopRecording' });
     if (response && response.success) {
       resetUI();
       stopTimer();
+    } else {
+      console.error('Stop failed:', response?.error);
+      stopBtn.disabled = false;
     }
   } catch (error) {
     console.error('Error stopping recording:', error);
+    stopBtn.disabled = false;
   }
 });
 
 // Timer functions
 function startTimer() {
   startTime = Date.now() - pausedTime;
+  updateTimer(); // Update immediately
   timerInterval = setInterval(updateTimer, 1000);
 }
 

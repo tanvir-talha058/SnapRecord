@@ -1,12 +1,6 @@
-// Import utility functions
-importScripts('utils.js');
-
 // Recording state
 let isRecording = false;
 let isPaused = false;
-let mediaRecorder = null;
-let recordedChunks = [];
-let recordingStream = null;
 let recordingTabId = null;
 let isContentScriptRecording = false;
 let recordingStartTime = 0;
@@ -33,27 +27,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
           
         case 'pauseRecording':
-          await pauseRecording();
-          sendResponse({ success: true });
+          const pauseResult = await pauseRecording();
+          sendResponse(pauseResult);
           break;
           
         case 'resumeRecording':
-          await resumeRecording();
-          sendResponse({ success: true });
+          const resumeResult = await resumeRecording();
+          sendResponse(resumeResult);
           break;
           
         case 'stopRecording':
-          await stopRecording();
-          sendResponse({ success: true });
+          const stopResult = await stopRecording();
+          sendResponse(stopResult);
           break;
           
         case 'recordingStarted':
           // Content script notifies us that recording started
+          // Only set recordingStartTime if not already set (avoid resetting timer)
           isContentScriptRecording = true;
           isRecording = true;
-          recordingStartTime = Date.now();
-          pausedDuration = 0;
-          pauseStartTime = 0;
+          if (!recordingStartTime || recordingStartTime === 0) {
+            recordingStartTime = Date.now();
+            pausedDuration = 0;
+            pauseStartTime = 0;
+          }
           chrome.action.setBadgeText({ text: 'REC' });
           chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
@@ -150,6 +147,15 @@ async function startRecording(options) {
     
     // Content script will handle the recording
     isContentScriptRecording = true;
+    isRecording = true;
+    recordingStartTime = Date.now();
+    pausedDuration = 0;
+    pauseStartTime = 0;
+    
+    // Set badge to show recording
+    chrome.action.setBadgeText({ text: 'REC' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+    
     return { success: true };
   } catch (error) {
     console.error('Error starting recording:', error);
@@ -159,101 +165,70 @@ async function startRecording(options) {
   }
 }
 
-// Initialize MediaRecorder
-async function initializeRecorder(stream, options) {
-  recordedChunks = [];
-  recordingStream = stream;
-  
-  // Create MediaRecorder
-  const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
-    ? 'video/webm; codecs=vp9'
-    : 'video/webm';
-  
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType,
-    videoBitsPerSecond: options.quality === '1440' ? 8000000 : 
-                       options.quality === '1080' ? 5000000 : 2500000
-  });
-
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data && event.data.size > 0) {
-      recordedChunks.push(event.data);
-    }
-  };
-
-  mediaRecorder.onstop = async () => {
-    await saveRecording();
-    // Stop all tracks
-    if (recordingStream) {
-      recordingStream.getTracks().forEach(track => track.stop());
-      recordingStream = null;
-    }
-  };
-
-  mediaRecorder.start(1000); // Capture data every second
-  isRecording = true;
-  isPaused = false;
-
-  // Update badge
-  chrome.action.setBadgeText({ text: 'REC' });
-  chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
-}
-
 // Pause recording
 async function pauseRecording() {
-  if (recordingTabId) {
-    // Send pause command to content script
-    try {
-      await chrome.tabs.sendMessage(recordingTabId, {
-        action: 'pauseContentRecording'
-      });
-      isPaused = true;
-      pauseStartTime = Date.now();
-    } catch (err) {
-      console.log('Error pausing recording:', err);
-    }
+async function pauseRecording() {
+  if (!recordingTabId) {
+    return { success: false, error: 'No active recording tab' };
   }
   
-  chrome.action.setBadgeText({ text: '⏸' });
-  chrome.action.setBadgeBackgroundColor({ color: '#FFA500' });
+  try {
+    const response = await chrome.tabs.sendMessage(recordingTabId, {
+      action: 'pauseContentRecording'
+    });
+    
+    if (response && response.success) {
+      isPaused = true;
+      pauseStartTime = Date.now();
+      chrome.action.setBadgeText({ text: '⏸' });
+      chrome.action.setBadgeBackgroundColor({ color: '#FFA500' });
+      return { success: true };
+    } else {
+      console.log('Pause failed:', response?.error);
+      return { success: false, error: response?.error || 'Failed to pause' };
+    }
+  } catch (err) {
+    console.log('Error pausing recording:', err);
+    return { success: false, error: err.message };
+  }
 }
 
 // Resume recording
 async function resumeRecording() {
-  if (recordingTabId) {
-    // Send resume command to content script
-    try {
-      await chrome.tabs.sendMessage(recordingTabId, {
-        action: 'resumeContentRecording'
-      });
+  if (!recordingTabId) {
+    return { success: false, error: 'No active recording tab' };
+  }
+  
+  try {
+    const response = await chrome.tabs.sendMessage(recordingTabId, {
+      action: 'resumeContentRecording'
+    });
+    
+    if (response && response.success) {
       // Add the paused time to the total paused duration
       if (pauseStartTime > 0) {
         pausedDuration += Date.now() - pauseStartTime;
         pauseStartTime = 0;
       }
       isPaused = false;
-    } catch (err) {
-      console.log('Error resuming recording:', err);
+      chrome.action.setBadgeText({ text: 'REC' });
+      chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
+      return { success: true };
+    } else {
+      console.log('Resume failed:', response?.error);
+      return { success: false, error: response?.error || 'Failed to resume' };
     }
+  } catch (err) {
+    console.log('Error resuming recording:', err);
+    return { success: false, error: err.message };
   }
-  
-  chrome.action.setBadgeText({ text: 'REC' });
-  chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
 }
 
 // Stop recording
 async function stopRecording() {
-  if (recordingTabId) {
-    // Send stop command to content script (handles both recording and camera cleanup)
-    try {
-      await chrome.tabs.sendMessage(recordingTabId, {
-        action: 'stopContentRecording'
-      });
-    } catch (err) {
-      console.log('Error stopping content script recording:', err);
-    }
-  }
+  const tabId = recordingTabId;
   
+  // Reset state first
   isContentScriptRecording = false;
   isRecording = false;
   isPaused = false;
@@ -262,38 +237,65 @@ async function stopRecording() {
   pausedDuration = 0;
   pauseStartTime = 0;
   
-  // Clear badge
   chrome.action.setBadgeText({ text: '' });
-}
-
-// Save recording
-async function saveRecording() {
-  if (recordedChunks.length === 0) {
-    console.error('No recorded data');
-    return;
+  
+  if (tabId) {
+    try {
+      await chrome.tabs.sendMessage(tabId, {
+        action: 'stopContentRecording'
+      });
+      return { success: true };
+    } catch (err) {
+      console.log('Error stopping content script recording:', err);
+      return { success: true }; // Still return success as recording is stopped
+    }
   }
-
-  const blob = new Blob(recordedChunks, { type: 'video/webm' });
-  const url = URL.createObjectURL(blob);
   
-  // Generate filename with timestamp
-  const filename = generateRecordingFilename();
-  
-  // Download the file
-  await chrome.downloads.download({
-    url: url,
-    filename: filename,
-    saveAs: true
-  });
-  
-  // Clean up
-  recordedChunks = [];
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { success: true };
 }
 
 // Clean up on extension shutdown
 chrome.runtime.onSuspend.addListener(() => {
   if (isRecording) {
     stopRecording();
+  }
+});
+
+// Keyboard shortcut handlers
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'toggle-recording') {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      // Load saved settings and start recording
+      const settings = await chrome.storage.sync.get([
+        'captureType', 'audioEnabled', 'micEnabled', 'quality',
+        'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
+        'frameRate', 'format'
+      ]);
+      
+      const options = {
+        captureType: settings.captureType || 'screen',
+        audioEnabled: settings.audioEnabled !== false,
+        micEnabled: settings.micEnabled || false,
+        quality: settings.quality || '1080',
+        cameraEnabled: settings.cameraEnabled || false,
+        cameraPosition: settings.cameraPosition || 'bottom-right',
+        cameraSize: settings.cameraSize || 'medium',
+        cameraShape: settings.cameraShape || 'circle',
+        frameRate: settings.frameRate || '30',
+        format: settings.format || 'webm-vp9'
+      };
+      
+      await startRecording(options);
+    }
+  } else if (command === 'pause-resume') {
+    if (isRecording) {
+      if (isPaused) {
+        await resumeRecording();
+      } else {
+        await pauseRecording();
+      }
+    }
   }
 });

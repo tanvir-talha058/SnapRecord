@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recording History - SnapRecord</title>
+  <link rel="stylesheet" href="history.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        <h1>Recording History</h1>
+      </div>
+      <button id="clearAllBtn" class="btn btn-danger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Clear All
+      </button>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-value" id="totalRecordings">0</span>
+        <span class="stat-label">Total Recordings</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="totalDuration">0:00:00</span>
+        <span class="stat-label">Total Duration</span>
+      </div>
+    </div>
+
+    <div id="historyList" class="history-list">
+      <div class="empty-state" id="emptyState">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <h3>No recordings yet</h3>
+        <p>Your recording history will appear here</p>
+      </div>
+    </div>
+  </div>
+  <script src="history.js"></script>
+</body>
+</html>

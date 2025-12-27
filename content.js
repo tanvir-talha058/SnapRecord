@@ -1,34 +1,36 @@
 // Content script for screen/window capture
 // This runs in the context of web pages and has access to navigator.mediaDevices
 
-// Prevent multiple injections
-if (window.__snapRecordContentScriptLoaded) {
-  console.log('SnapRecord content script already loaded');
-} else {
-  window.__snapRecordContentScriptLoaded = true;
-}
-
-let currentStream = null;
-let cameraStream = null;
-let cameraOverlay = null;
-
-// Utility function for generating filenames
-function generateRecordingFilename(extension = 'webm') {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+(function() {
+  'use strict';
   
-  return `SnapRecord_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.${extension}`;
-}
+  // Prevent multiple initializations
+  if (window.__snapRecordContentScriptLoaded) {
+    return; // Already loaded - exit early
+  }
+  window.__snapRecordContentScriptLoaded = true;
 
-// Camera overlay management
-function createCameraOverlay(options) {
-  // Remove existing overlay if present
-  removeCameraOverlay();
+  let currentStream = null;
+  let cameraStream = null;
+  let cameraOverlay = null;
+
+  // Utility function for generating filenames
+  function generateRecordingFilename(extension = 'webm') {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `SnapRecord_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.${extension}`;
+  }
+
+  // Camera overlay management
+  function createCameraOverlay(options) {
+    // Remove existing overlay if present
+    removeCameraOverlay();
   
   const overlay = document.createElement('div');
   overlay.id = 'snaprecord-camera-overlay';
@@ -216,58 +218,323 @@ function removeCameraOverlay() {
   }
 }
 
-// Recording indicator on screen
-let recordingIndicator = null;
+// Countdown overlay
+function showCountdown(seconds) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.id = 'snaprecord-countdown-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    const countdownText = document.createElement('div');
+    countdownText.style.cssText = `
+      font-size: 150px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
+      animation: snaprecord-countdown-pulse 1s ease-in-out infinite;
+    `;
+    
+    const style = document.createElement('style');
+    style.id = 'snaprecord-countdown-styles';
+    style.textContent = `
+      @keyframes snaprecord-countdown-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    overlay.appendChild(countdownText);
+    document.body.appendChild(overlay);
+    
+    let count = seconds;
+    countdownText.textContent = count;
+    
+    const interval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        countdownText.textContent = count;
+      } else {
+        clearInterval(interval);
+        overlay.remove();
+        style.remove();
+        resolve();
+      }
+    }, 1000);
+  });
+}
 
-function createRecordingIndicator() {
-  removeRecordingIndicator();
+// Annotation/Drawing Tools
+let annotationCanvas = null;
+let annotationCtx = null;
+let annotationToolbar = null;
+let isDrawing = false;
+let currentTool = 'pen';
+let currentColor = '#ff4444';
+let brushSize = 4;
+
+function createAnnotationTools() {
+  removeAnnotationTools();
   
-  const indicator = document.createElement('div');
-  indicator.id = 'snaprecord-recording-indicator';
-  indicator.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <div style="width: 12px; height: 12px; background: #ff4444; border-radius: 50%; animation: snaprecord-pulse 1s infinite;"></div>
-      <span style="font-weight: 500;">Recording</span>
-    </div>
-  `;
-  indicator.style.cssText = `
+  // Create canvas overlay
+  annotationCanvas = document.createElement('canvas');
+  annotationCanvas.id = 'snaprecord-annotation-canvas';
+  annotationCanvas.width = window.innerWidth;
+  annotationCanvas.height = window.innerHeight;
+  annotationCanvas.style.cssText = `
     position: fixed;
-    top: 10px;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483645;
+    pointer-events: none;
+    cursor: crosshair;
+  `;
+  document.body.appendChild(annotationCanvas);
+  annotationCtx = annotationCanvas.getContext('2d');
+  
+  // Create toolbar
+  annotationToolbar = document.createElement('div');
+  annotationToolbar.id = 'snaprecord-annotation-toolbar';
+  annotationToolbar.innerHTML = `
+    <button class="tool-btn active" data-tool="pen" title="Pen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="highlighter" title="Highlighter">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l-6 6v3h9l3-3"/>
+        <path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="arrow" title="Arrow">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="rectangle" title="Rectangle">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      </svg>
+    </button>
+    <div class="tool-separator"></div>
+    <input type="color" class="color-picker" value="#ff4444" title="Color">
+    <div class="tool-separator"></div>
+    <button class="tool-btn" data-action="clear" title="Clear All">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+    </button>
+    <button class="tool-btn toggle-draw" data-action="toggle" title="Toggle Drawing">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  `;
+  annotationToolbar.style.cssText = `
+    position: fixed;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 2147483646;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
-    z-index: 2147483647;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
   `;
   
-  // Add pulse animation
+  // Add styles
   const style = document.createElement('style');
-  style.id = 'snaprecord-indicator-styles';
+  style.id = 'snaprecord-annotation-styles';
   style.textContent = `
-    @keyframes snaprecord-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    #snaprecord-annotation-toolbar .tool-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #ccc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #snaprecord-annotation-toolbar .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    #snaprecord-annotation-toolbar .tool-btn.active {
+      background: rgba(102, 126, 234, 0.3);
+      color: #667eea;
+    }
+    #snaprecord-annotation-toolbar .tool-separator {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 4px;
+    }
+    #snaprecord-annotation-toolbar .color-picker {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+    }
+    #snaprecord-annotation-toolbar .toggle-draw.drawing-active {
+      background: rgba(34, 197, 94, 0.3);
+      color: #22c55e;
     }
   `;
   document.head.appendChild(style);
-  document.body.appendChild(indicator);
-  recordingIndicator = indicator;
+  document.body.appendChild(annotationToolbar);
+  
+  // Set up event listeners
+  setupAnnotationEvents();
 }
 
-function removeRecordingIndicator() {
-  if (recordingIndicator) {
-    recordingIndicator.remove();
-    recordingIndicator = null;
+function setupAnnotationEvents() {
+  const toolbar = annotationToolbar;
+  const canvas = annotationCanvas;
+  let startX, startY;
+  
+  // Tool selection
+  toolbar.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toolbar.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTool = btn.dataset.tool;
+    });
+  });
+  
+  // Color picker
+  toolbar.querySelector('.color-picker').addEventListener('input', (e) => {
+    currentColor = e.target.value;
+  });
+  
+  // Clear
+  toolbar.querySelector('[data-action="clear"]').addEventListener('click', () => {
+    annotationCtx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+  
+  // Toggle drawing
+  const toggleBtn = toolbar.querySelector('[data-action="toggle"]');
+  toggleBtn.addEventListener('click', () => {
+    const isActive = canvas.style.pointerEvents === 'auto';
+    canvas.style.pointerEvents = isActive ? 'none' : 'auto';
+    toggleBtn.classList.toggle('drawing-active', !isActive);
+  });
+  
+  // Drawing events
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    if (currentTool === 'pen' || currentTool === 'highlighter') {
+      annotationCtx.beginPath();
+      annotationCtx.moveTo(startX, startY);
+    }
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    
+    if (currentTool === 'pen') {
+      annotationCtx.strokeStyle = currentColor;
+      annotationCtx.lineWidth = brushSize;
+      annotationCtx.lineCap = 'round';
+      annotationCtx.lineTo(e.clientX, e.clientY);
+      annotationCtx.stroke();
+    } else if (currentTool === 'highlighter') {
+      annotationCtx.strokeStyle = currentColor + '40';
+      annotationCtx.lineWidth = 20;
+      annotationCtx.lineCap = 'round';
+      annotationCtx.lineTo(e.clientX, e.clientY);
+      annotationCtx.stroke();
+    }
+  });
+  
+  canvas.addEventListener('mouseup', (e) => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    
+    const endX = e.clientX;
+    const endY = e.clientY;
+    
+    if (currentTool === 'arrow') {
+      drawArrow(startX, startY, endX, endY);
+    } else if (currentTool === 'rectangle') {
+      annotationCtx.strokeStyle = currentColor;
+      annotationCtx.lineWidth = brushSize;
+      annotationCtx.strokeRect(startX, startY, endX - startX, endY - startY);
+    }
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    isDrawing = false;
+  });
+}
+
+function drawArrow(fromX, fromY, toX, toY) {
+  const headLength = 15;
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  
+  annotationCtx.strokeStyle = currentColor;
+  annotationCtx.lineWidth = brushSize;
+  annotationCtx.lineCap = 'round';
+  
+  // Line
+  annotationCtx.beginPath();
+  annotationCtx.moveTo(fromX, fromY);
+  annotationCtx.lineTo(toX, toY);
+  annotationCtx.stroke();
+  
+  // Arrow head
+  annotationCtx.beginPath();
+  annotationCtx.moveTo(toX, toY);
+  annotationCtx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+  annotationCtx.moveTo(toX, toY);
+  annotationCtx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+  annotationCtx.stroke();
+}
+
+function removeAnnotationTools() {
+  if (annotationCanvas) {
+    annotationCanvas.remove();
+    annotationCanvas = null;
   }
-  const style = document.getElementById('snaprecord-indicator-styles');
+  if (annotationToolbar) {
+    annotationToolbar.remove();
+    annotationToolbar = null;
+  }
+  const style = document.getElementById('snaprecord-annotation-styles');
   if (style) style.remove();
 }
+
 
 async function startCamera(options) {
   try {
@@ -291,19 +558,18 @@ async function startCamera(options) {
   }
 }
 
-// Flag to prevent multiple injections
-if (window.__snapRecordContentScriptLoaded) {
-  console.log('SnapRecord content script already loaded');
-} else {
-  window.__snapRecordContentScriptLoaded = true;
-  console.log('SnapRecord content script loaded');
-}
-
 // Single consolidated message listener
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Ping to check if content script is ready
   if (request.action === 'ping') {
     sendResponse({ success: true, ready: true });
+    return true;
+  }
+  
+  if (request.action === 'showCountdown') {
+    showCountdown(request.seconds || 3)
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
   
@@ -359,7 +625,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'stopContentRecording') {
-    removeRecordingIndicator();
+    removeAnnotationTools();
     if (!recorder) {
       // Already stopped, clean up camera overlay anyway
       removeCameraOverlay();
@@ -440,7 +706,13 @@ async function handleStartCapture(captureType, options) {
     // Add microphone audio if enabled
     if (options.micEnabled) {
       try {
-        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const audioConstraints = {
+          audio: options.micDeviceId && options.micDeviceId !== 'default'
+            ? { deviceId: { exact: options.micDeviceId } }
+            : true,
+          video: false
+        };
+        const micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
         const micTrack = micStream.getAudioTracks()[0];
         if (micTrack) {
           currentStream.addTrack(micTrack);
@@ -457,7 +729,6 @@ async function handleStartCapture(captureType, options) {
         recorder.stop();
       }
       removeCameraOverlay();
-      removeRecordingIndicator();
       chrome.runtime.sendMessage({ action: 'stopRecording' }).catch(() => {});
     });
 
@@ -474,6 +745,11 @@ async function handleStartCapture(captureType, options) {
 }
 
 function startRecordingInContent(stream, options) {
+  // Create annotation tools if enabled
+  if (options.annotationsEnabled !== false) {
+    createAnnotationTools();
+  }
+  
   // Determine MIME type based on format selection
   let mimeType;
   let fileExtension = 'webm';
@@ -546,9 +822,6 @@ function startRecordingInContent(stream, options) {
   };
 
   mediaRecorder.onstop = async () => {
-    // Remove recording indicator
-    removeRecordingIndicator();
-    
     const blob = new Blob(recordedChunks, { type: mimeType });
     
     // Create download link
@@ -571,15 +844,39 @@ function startRecordingInContent(stream, options) {
     // Stop all tracks
     stream.getTracks().forEach(track => track.stop());
     
-    // Clean up camera overlay
+    // Clean up camera overlay and annotation tools
     removeCameraOverlay();
+    removeAnnotationTools();
+    
+    // Save to recording history
+    saveToHistory(filename, options);
   };
+  
+  // Track recording start time for duration calculation
+  const recordingStartTime = Date.now();
+  
+  // Save recording to history
+  function saveToHistory(filename, options) {
+    const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+    const historyEntry = {
+      filename,
+      date: new Date().toISOString(),
+      duration,
+      quality: options.quality || '1080',
+      format: options.format || 'webm-vp9'
+    };
+    
+    chrome.storage.local.get('recordingHistory', (result) => {
+      const history = result.recordingHistory || [];
+      history.push(historyEntry);
+      // Keep only last 100 recordings
+      if (history.length > 100) history.shift();
+      chrome.storage.local.set({ recordingHistory: history });
+    });
+  }
 
   // Store recorder reference for pause/resume/stop
   window.__snapRecordMediaRecorder = mediaRecorder;
-  
-  // Show recording indicator
-  createRecordingIndicator();
   
   // Start recording
   mediaRecorder.start(1000);
@@ -590,3 +887,5 @@ function startRecordingInContent(stream, options) {
     inContentScript: true
   });
 }
+
+})(); // End of IIFE

@@ -20,9 +20,31 @@ A lightweight, feature-rich screen recording extension for Chromium-based browse
   - Mix both audio sources
 
 - 📺 **Quality Settings**
+  - 480p (SD)
   - 720p (HD)
   - 1080p (Full HD)
   - 1440p (2K)
+  - 2160p (4K)
+
+- 📹 **Camera Overlay**
+  - Picture-in-picture webcam
+  - Customizable position, size, and shape
+
+- ✏️ **Annotation Tools**
+  - Pen, highlighter, arrow, rectangle
+  - Color picker
+  - Draw on screen while recording
+
+- ⌨️ **Keyboard Shortcuts**
+  - Alt+Shift+R: Start/Stop recording
+  - Alt+Shift+P: Pause/Resume recording
+
+- ⏱️ **Countdown Timer**
+  - 3, 5, or 10 second countdown before recording
+
+- 📊 **Recording History**
+  - View past recordings with stats
+  - Track total recording time and storage
 
 - 💾 **Easy Saving**
   - Auto-download in WebM format
@@ -69,16 +91,6 @@ The extension will be available on the Chrome Web Store soon.
 5. Click "Start Recording"
 6. When finished, click "Stop" to save the recording
 
-### Testing the Extension
-
-Open the included `test-page.html` in your browser to test all features:
-- Animated content capture
-- Interactive canvas recording
-- Video and audio capture
-- Counter for timing
-
-See [INSTALLATION.md](INSTALLATION.md) for detailed installation and testing instructions.
-
 ### Pause & Resume
 
 - While recording, click "Pause" to temporarily stop capturing
@@ -108,9 +120,10 @@ SnapRecord is built using Chrome Extension Manifest V3 with the following compon
 
 - **manifest.json**: Extension configuration and permissions
 - **popup.html/css/js**: Main user interface
-- **background.js**: Service worker handling recording logic
-- **offscreen.html/js**: Offscreen document for display media capture
+- **background.js**: Service worker handling recording state
+- **content.js**: Content script for screen capture and recording
 - **options.html/css/js**: Settings/configuration page
+- **history.html/css/js**: Recording history page
 - **icons/**: Extension icons in multiple sizes
 
 ## 🔒 Permissions
@@ -119,8 +132,9 @@ SnapRecord requires the following permissions:
 
 - **activeTab**: Access the current tab for tab recording
 - **tabCapture**: Capture tab audio and video
-- **storage**: Save user preferences
-- **offscreen**: Create offscreen documents for screen/window capture
+- **storage**: Save user preferences and recording history
+- **scripting**: Inject content script for recording
+- **downloads**: Save recorded videos
 - **host_permissions**: Required for complete tab capture functionality
 
 All permissions are used exclusively for screen recording functionality and no data is collected or transmitted.
@@ -129,7 +143,7 @@ All permissions are used exclusively for screen recording functionality and no d
 
 ### Supported Formats
 
-- **Video**: WebM with VP9 codec
+- **Video**: WebM (VP9, VP8, H.264), MP4, GIF
 - **Audio**: Opus codec
 
 ### Browser Compatibility
@@ -182,9 +196,10 @@ MIT License - feel free to use this project for any purpose.
 
 ## 🔮 Roadmap
 
-- [ ] MP4 export option
-- [ ] Drawing/annotation tools during recording
-- [ ] Webcam overlay support
+- [x] Drawing/annotation tools during recording
+- [x] Webcam overlay support  
+- [x] Keyboard shortcuts
+- [x] Recording history
 - [ ] Cloud upload integration
 - [ ] Video trimming/editing
 - [ ] Custom watermarks

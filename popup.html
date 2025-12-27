@@ -25,33 +25,33 @@
     </div>
     
     <!-- Status Bar -->
-    <div id="recordingStatus" class="status-bar">
+    <div id="recordingStatus" class="status-bar" role="status" aria-live="polite" aria-label="Recording status">
       <div class="status-indicator">
-        <span class="status-dot"></span>
+        <span class="status-dot" aria-hidden="true"></span>
         <span id="statusText">Ready to record</span>
       </div>
-      <span id="timer" class="timer">00:00:00</span>
+      <span id="timer" class="timer" aria-label="Recording duration">00:00:00</span>
     </div>
 
     <!-- Tabs Navigation -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="capture">
-        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="tabs" role="tablist" aria-label="Recording settings tabs">
+      <button class="tab-btn active" data-tab="capture" role="tab" aria-selected="true" aria-controls="tab-capture" aria-label="Capture settings tab">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M23 7l-7 5 7 5V7z"/>
           <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
         </svg>
         <span>Capture</span>
       </button>
-      <button class="tab-btn" data-tab="audio">
-        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="tab-btn" data-tab="audio" role="tab" aria-selected="false" aria-controls="tab-audio" aria-label="Audio settings tab">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M9 18V5l12-2v13"/>
           <circle cx="6" cy="18" r="3"/>
           <circle cx="18" cy="16" r="3"/>
         </svg>
         <span>Audio</span>
       </button>
-      <button class="tab-btn" data-tab="output">
-        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="tab-btn" data-tab="output" role="tab" aria-selected="false" aria-controls="tab-output" aria-label="Output settings tab">
+        <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
           <polyline points="17 21 17 13 7 13 7 21"/>
           <polyline points="7 3 7 8 15 8"/>
@@ -73,7 +73,7 @@
             </svg>
             Capture Source
           </label>
-          <select id="captureType">
+          <select id="captureType" aria-label="Select capture source type">
             <option value="screen">Entire Screen</option>
             <option value="window">Application Window</option>
             <option value="tab">Browser Tab</option>
@@ -83,11 +83,11 @@
         <div class="option-group">
           <label class="checkbox-label">
             <div class="toggle-switch">
-              <input type="checkbox" id="cameraEnabled">
+              <input type="checkbox" id="cameraEnabled" aria-label="Enable camera overlay during recording">
               <span class="toggle-slider"></span>
             </div>
             <span class="label-text">
-              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                 <circle cx="12" cy="13" r="4"/>
               </svg>
@@ -100,7 +100,7 @@
           <div class="option-row">
             <div class="option-group half">
               <label for="cameraPosition">Position</label>
-              <select id="cameraPosition">
+              <select id="cameraPosition" aria-label="Camera overlay position">
                 <option value="bottom-right">Bottom Right</option>
                 <option value="bottom-left">Bottom Left</option>
                 <option value="top-right">Top Right</option>
@@ -109,7 +109,7 @@
             </div>
             <div class="option-group half">
               <label for="cameraSize">Size</label>
-              <select id="cameraSize">
+              <select id="cameraSize" aria-label="Camera overlay size">
                 <option value="small">Small</option>
                 <option value="medium" selected>Medium</option>
                 <option value="large">Large</option>
@@ -117,21 +117,21 @@
             </div>
           </div>
           <div class="option-group">
-            <label>Shape</label>
-            <div class="shape-options">
+            <label id="camera-shape-label">Shape</label>
+            <div class="shape-options" role="radiogroup" aria-labelledby="camera-shape-label">
               <label class="shape-option">
-                <input type="radio" name="cameraShape" value="circle" checked>
-                <span class="shape-preview circle"></span>
+                <input type="radio" name="cameraShape" value="circle" checked aria-label="Circle shaped camera overlay">
+                <span class="shape-preview circle" aria-hidden="true"></span>
                 <span>Circle</span>
               </label>
               <label class="shape-option">
-                <input type="radio" name="cameraShape" value="rounded">
-                <span class="shape-preview rounded"></span>
+                <input type="radio" name="cameraShape" value="rounded" aria-label="Rounded rectangle shaped camera overlay">
+                <span class="shape-preview rounded" aria-hidden="true"></span>
                 <span>Rounded</span>
               </label>
               <label class="shape-option">
-                <input type="radio" name="cameraShape" value="square">
-                <span class="shape-preview square"></span>
+                <input type="radio" name="cameraShape" value="square" aria-label="Square shaped camera overlay">
+                <span class="shape-preview square" aria-hidden="true"></span>
                 <span>Square</span>
               </label>
             </div>
@@ -144,11 +144,11 @@
         <div class="option-group">
           <label class="checkbox-label">
             <div class="toggle-switch">
-              <input type="checkbox" id="audioEnabled" checked>
+              <input type="checkbox" id="audioEnabled" checked aria-label="Enable system audio recording">
               <span class="toggle-slider"></span>
             </div>
             <span class="label-text">
-              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
@@ -162,11 +162,11 @@
         <div class="option-group">
           <label class="checkbox-label">
             <div class="toggle-switch">
-              <input type="checkbox" id="micEnabled">
+              <input type="checkbox" id="micEnabled" aria-label="Enable microphone recording">
               <span class="toggle-slider"></span>
             </div>
             <span class="label-text">
-              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 <line x1="12" y1="19" x2="12" y2="23"/>
@@ -181,7 +181,7 @@
         <div id="micSettings" class="collapsible-section" style="display: none;">
           <div class="option-group">
             <label for="micDevice">Microphone Device</label>
-            <select id="micDevice">
+            <select id="micDevice" aria-label="Select microphone device for recording">
               <option value="default">Default Microphone</option>
             </select>
           </div>
@@ -199,7 +199,7 @@
             </svg>
             Video Quality
           </label>
-          <select id="quality">
+          <select id="quality" aria-label="Select video quality resolution">
             <option value="480">480p (SD) - Smallest file</option>
             <option value="720">720p (HD) - Balanced</option>
             <option value="1080" selected>1080p (Full HD) - Recommended</option>
@@ -222,7 +222,7 @@
             </svg>
             Frame Rate
           </label>
-          <select id="frameRate">
+          <select id="frameRate" aria-label="Select video frame rate">
             <option value="24">24 FPS - Cinematic</option>
             <option value="30" selected>30 FPS - Standard</option>
             <option value="60">60 FPS - Smooth</option>
@@ -239,7 +239,7 @@
             </svg>
             Output Format
           </label>
-          <select id="format">
+          <select id="format" aria-label="Select output video format">
             <option value="webm-vp9">WebM (VP9) - Best quality</option>
             <option value="webm-vp8">WebM (VP8) - Compatible</option>
             <option value="webm-h264">WebM (H.264) - Universal</option>
@@ -248,6 +248,21 @@
           </select>
         </div>
 
+        <div class="option-group">
+          <label for="countdownSeconds">
+            <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Countdown Timer
+          </label>
+          <select id="countdownSeconds" aria-label="Select countdown timer before recording starts">
+            <option value="0">No countdown</option>
+            <option value="3" selected>3 seconds</option>
+            <option value="5">5 seconds</option>
+            <option value="10">10 seconds</option>
+          </select>
+        </div>
         <div class="quality-preview">
           <div class="preview-item">
             <span class="preview-label">Est. file size (1 min)</span>
@@ -262,29 +277,29 @@
     </div>
 
     <!-- Controls -->
-    <div class="controls">
-      <button id="startBtn" class="btn btn-start">
-        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <div class="controls" role="group" aria-label="Recording controls">
+      <button id="startBtn" class="btn btn-start" aria-label="Start screen recording">
+        <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
         </svg>
         <span class="btn-text">Start Recording</span>
       </button>
       <div class="control-row">
-        <button id="pauseBtn" class="btn btn-pause" disabled>
-          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <button id="pauseBtn" class="btn btn-pause" disabled aria-label="Pause recording">
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <rect x="6" y="4" width="4" height="16"/>
             <rect x="14" y="4" width="4" height="16"/>
           </svg>
           <span class="btn-text">Pause</span>
         </button>
-        <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;">
-          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;" aria-label="Resume recording">
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
           <span class="btn-text">Resume</span>
         </button>
-        <button id="stopBtn" class="btn btn-stop" disabled>
-          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <button id="stopBtn" class="btn btn-stop" disabled aria-label="Stop and save recording">
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <rect x="4" y="4" width="16" height="16" rx="2"/>
           </svg>
           <span class="btn-text">Stop</span>
@@ -294,12 +309,19 @@
 
     <!-- Footer -->
     <div class="footer">
-      <a href="options.html" target="_blank" class="settings-link">
+      <a href="history.html" target="_blank" class="settings-link" aria-label="View recording history">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        History
+      </a>
+      <a href="options.html" target="_blank" class="settings-link" aria-label="Open advanced settings">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
-        Advanced Settings
+        Settings
       </a>
       <span class="version">v1.0.0</span>
     </div>
