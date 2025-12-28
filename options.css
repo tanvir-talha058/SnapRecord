@@ -27,10 +27,22 @@ header {
   border-bottom: 2px solid #f0f0f0;
 }
 
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.header-logo img {
+  border-radius: 8px;
+}
+
 header h1 {
   font-size: 32px;
   color: #667eea;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .subtitle {

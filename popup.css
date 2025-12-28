@@ -32,14 +32,21 @@ body {
 }
 
 .logo-icon {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: pulse 2s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.logo-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .logo-icon svg {

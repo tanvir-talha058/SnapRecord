@@ -33,6 +33,10 @@ body {
   color: #667eea;
 }
 
+.logo img {
+  border-radius: 6px;
+}
+
 .logo h1 {
   font-size: 24px;
   font-weight: 600;
