@@ -28,24 +28,13 @@ body {
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.logo-icon {
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulse 2s ease-in-out infinite;
-  overflow: hidden;
-}
-
-.logo-icon img {
-  width: 48px;
-  height: 48px;
+.logo-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
   object-fit: contain;
 }
 
