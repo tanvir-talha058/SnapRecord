@@ -42,15 +42,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
           
         case 'recordingStarted':
-          // Content script notifies us that recording started
-          // Only set recordingStartTime if not already set (avoid resetting timer)
+          // Content script notifies us that recording actually started (after countdown)
           isContentScriptRecording = true;
           isRecording = true;
-          if (!recordingStartTime || recordingStartTime === 0) {
-            recordingStartTime = Date.now();
-            pausedDuration = 0;
-            pauseStartTime = 0;
-          }
+          // Always set the recording start time when recording actually starts
+          recordingStartTime = Date.now();
+          pausedDuration = 0;
+          pauseStartTime = 0;
           chrome.action.setBadgeText({ text: 'REC' });
           chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
@@ -148,7 +146,9 @@ async function startRecording(options) {
     // Content script will handle the recording
     isContentScriptRecording = true;
     isRecording = true;
-    recordingStartTime = Date.now();
+    // Don't set recordingStartTime here - it will be set when recording actually starts
+    // after the countdown completes in content.js
+    recordingStartTime = 0;
     pausedDuration = 0;
     pauseStartTime = 0;
     
@@ -166,7 +166,6 @@ async function startRecording(options) {
 }
 
 // Pause recording
-async function pauseRecording() {
 async function pauseRecording() {
   if (!recordingTabId) {
     return { success: false, error: 'No active recording tab' };
