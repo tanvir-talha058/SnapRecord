@@ -745,49 +745,53 @@ async function handleStartCapture(captureType, options) {
 }
 
 function startRecordingInContent(stream, options) {
-  // Create annotation tools if enabled
-  if (options.annotationsEnabled !== false) {
-    createAnnotationTools();
-  }
+  // Show countdown after user has selected what to capture
+  const countdownSeconds = parseInt(options.countdownSeconds) || 0;
   
-  // Determine MIME type based on format selection
-  let mimeType;
-  let fileExtension = 'webm';
-  
-  switch (options.format) {
-    case 'webm-vp9':
-      mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
-        ? 'video/webm; codecs=vp9' 
-        : 'video/webm';
-      break;
-    case 'webm-vp8':
-      mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp8') 
-        ? 'video/webm; codecs=vp8' 
-        : 'video/webm';
-      break;
-    case 'webm-h264':
-      mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=h264') 
-        ? 'video/webm; codecs=h264' 
-        : 'video/webm';
-      break;
-    case 'mp4':
-      // Browser support for MP4 recording is limited, fallback to WebM
-      if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-        fileExtension = 'mp4';
-      } else {
-        mimeType = 'video/webm; codecs=h264';
-      }
-      break;
-    case 'gif':
-      // GIF is not directly supported, record as WebM for now
-      mimeType = 'video/webm';
-      break;
-    default:
-      mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
-        ? 'video/webm; codecs=vp9' 
-        : 'video/webm';
-  }
+  const startActualRecording = () => {
+    // Create annotation tools if enabled
+    if (options.annotationsEnabled !== false) {
+      createAnnotationTools();
+    }
+    
+    // Determine MIME type based on format selection
+    let mimeType;
+    let fileExtension = 'webm';
+    
+    switch (options.format) {
+      case 'webm-vp9':
+        mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
+          ? 'video/webm; codecs=vp9' 
+          : 'video/webm';
+        break;
+      case 'webm-vp8':
+        mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp8') 
+          ? 'video/webm; codecs=vp8' 
+          : 'video/webm';
+        break;
+      case 'webm-h264':
+        mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=h264') 
+          ? 'video/webm; codecs=h264' 
+          : 'video/webm';
+        break;
+      case 'mp4':
+        // Browser support for MP4 recording is limited, fallback to WebM
+        if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
+          fileExtension = 'mp4';
+        } else {
+          mimeType = 'video/webm; codecs=h264';
+        }
+        break;
+      case 'gif':
+        // GIF is not directly supported, record as WebM for now
+        mimeType = 'video/webm';
+        break;
+      default:
+        mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9') 
+          ? 'video/webm; codecs=vp9' 
+          : 'video/webm';
+    }
   
   // Calculate bitrate based on quality and frame rate
   const qualityBitrates = {
@@ -886,6 +890,14 @@ function startRecordingInContent(stream, options) {
     action: 'recordingStarted',
     inContentScript: true
   });
+  };
+  
+  // Show countdown if enabled, then start recording
+  if (countdownSeconds > 0) {
+    showCountdown(countdownSeconds).then(startActualRecording);
+  } else {
+    startActualRecording();
+  }
 }
 
 })(); // End of IIFE
