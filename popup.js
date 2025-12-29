@@ -209,6 +209,9 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
       startTime = Date.now() - elapsed;
       pausedTime = 0;
       
+      // Update timer display immediately
+      updateTimer();
+      
       if (response.isPaused) {
         pausedTime = elapsed;
         updateUIForPaused();
@@ -216,10 +219,25 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
         startTimer();
       }
     } else {
-      // Recording just started, start fresh timer
-      startTime = Date.now();
-      pausedTime = 0;
-      startTimer();
+      // Recording is starting (countdown in progress), show "Starting..." state
+      statusText.textContent = 'Starting...';
+      timerElement.textContent = '00:00:00';
+      // Poll for actual recording start
+      const pollForStart = setInterval(() => {
+        chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
+          if (pollResponse && pollResponse.recordingStartTime > 0) {
+            clearInterval(pollForStart);
+            const elapsed = Date.now() - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
+            startTime = Date.now() - elapsed;
+            pausedTime = 0;
+            updateTimer();
+            statusText.textContent = 'Recording...';
+            if (!pollResponse.isPaused) {
+              startTimer();
+            }
+          }
+        });
+      }, 500);
     }
   }
 });
@@ -254,21 +272,6 @@ startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
     startBtn.innerHTML = ICONS.loading + '<span class="btn-text">Starting...</span>';
     
-    // Show countdown if enabled
-    const countdown = parseInt(countdownSeconds.value) || 0;
-    if (countdown > 0) {
-      // Get the current tab and show countdown
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && !tab.url.startsWith('chrome://')) {
-        startBtn.innerHTML = ICONS.loading + '<span class="btn-text">Countdown...</span>';
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: 'showCountdown', seconds: countdown });
-        } catch (err) {
-          console.log('Could not show countdown:', err);
-        }
-      }
-    }
-    
     const response = await chrome.runtime.sendMessage({ 
       action: 'startRecording', 
       options 
@@ -276,7 +279,27 @@ startBtn.addEventListener('click', async () => {
     
     if (response && response.success) {
       updateUIForRecording();
-      startTimer();
+      statusText.textContent = 'Starting...';
+      timerElement.textContent = '00:00:00';
+      
+      // Poll for actual recording start (after countdown completes)
+      const pollForStart = setInterval(() => {
+        chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
+          if (pollResponse && pollResponse.recordingStartTime > 0) {
+            clearInterval(pollForStart);
+            const elapsed = Date.now() - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
+            startTime = Date.now() - elapsed;
+            pausedTime = 0;
+            updateTimer();
+            statusText.textContent = 'Recording...';
+            startTimer();
+          } else if (!pollResponse || !pollResponse.isRecording) {
+            // Recording was cancelled or failed
+            clearInterval(pollForStart);
+            resetUI();
+          }
+        });
+      }, 300);
     } else {
       alert('Failed to start recording: ' + (response?.error || 'Unknown error'));
       startBtn.disabled = false;
@@ -344,19 +367,30 @@ stopBtn.addEventListener('click', async () => {
 
 // Timer functions
 function startTimer() {
+  // Clear any existing timer first
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   startTime = Date.now() - pausedTime;
   updateTimer(); // Update immediately
   timerInterval = setInterval(updateTimer, 1000);
 }
 
 function stopTimer() {
-  clearInterval(timerInterval);
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   pausedTime = 0;
   timerElement.textContent = '00:00:00';
 }
 
 function pauseTimer() {
-  clearInterval(timerInterval);
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   pausedTime = Date.now() - startTime;
 }
 
