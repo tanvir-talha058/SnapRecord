@@ -686,12 +686,29 @@ async function handleStartCapture(captureType, options) {
         height: { ideal: resolution.height },
         frameRate: { ideal: frameRate, max: frameRate }
       },
-      audio: options.audioEnabled
+      audio: options.audioEnabled,
+      // Suppress the browser's built-in control bar
+      preferCurrentTab: false,
+      selfBrowserSurface: 'exclude',
+      systemAudio: 'include',
+      surfaceSwitching: 'exclude',
+      monitorTypeSurfaces: 'include'
     };
+
+    // Use CaptureController to hide the focus indicator and control bar if supported
+    let controller = null;
+    if (typeof CaptureController !== 'undefined') {
+      controller = new CaptureController();
+      controller.setFocusBehavior('no-focus-change');
+    }
 
     // Get display media stream
     try {
-      currentStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+      const displayOptions = { ...constraints };
+      if (controller) {
+        displayOptions.controller = controller;
+      }
+      currentStream = await navigator.mediaDevices.getDisplayMedia(displayOptions);
     } catch (displayError) {
       // User cancelled or error - clean up camera overlay
       removeCameraOverlay();
