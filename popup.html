@@ -132,6 +132,23 @@
             </div>
           </div>
         </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="annotationsEnabled" checked aria-label="Enable drawing tools during recording">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="label-text">
+              <svg class="label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+              </svg>
+              Drawing Tools
+            </span>
+          </label>
+          <p class="option-hint">Draw on screen during recording. Shortcuts: P=Pen, H=Highlighter, A=Arrow, R=Rect, C=Circle, E=Eraser, D=Toggle, Esc=Hide</p>
+        </div>
       </div>
 
       <!-- Audio Tab -->
@@ -318,7 +335,7 @@
         </svg>
         Settings
       </a>
-      <span class="version">v1.0.0</span>
+      <span class="version">v1.1.0</span>
     </div>
   </div>
   <script src="popup.js"></script>

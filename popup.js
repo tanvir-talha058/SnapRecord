@@ -20,6 +20,7 @@ const countdownSeconds = document.getElementById('countdownSeconds');
 const fileSizeEstimate = document.getElementById('fileSizeEstimate');
 const resolutionPreview = document.getElementById('resolutionPreview');
 const micSettings = document.getElementById('micSettings');
+const annotationsEnabled = document.getElementById('annotationsEnabled');
 
 let startTime = 0;
 let pausedTime = 0;
@@ -59,7 +60,7 @@ function setCameraShape(value) {
 chrome.storage.sync.get([
   'captureType', 'audioEnabled', 'micEnabled', 'quality', 
   'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
-  'frameRate', 'format', 'countdownSeconds'
+  'frameRate', 'format', 'countdownSeconds', 'annotationsEnabled'
 ], (result) => {
   if (result.captureType) captureType.value = result.captureType;
   if (result.audioEnabled !== undefined) audioEnabled.checked = result.audioEnabled;
@@ -75,6 +76,8 @@ chrome.storage.sync.get([
   if (result.frameRate) frameRate.value = result.frameRate;
   if (result.format) format.value = result.format;
   if (result.countdownSeconds !== undefined) countdownSeconds.value = result.countdownSeconds;
+  if (result.annotationsEnabled !== undefined) annotationsEnabled.checked = result.annotationsEnabled;
+  else annotationsEnabled.checked = true; // Default to enabled
   
   updateQualityPreview();
 });
@@ -92,12 +95,13 @@ function saveSettings() {
     cameraShape: getCameraShape(),
     frameRate: frameRate.value,
     format: format.value,
-    countdownSeconds: countdownSeconds.value
+    countdownSeconds: countdownSeconds.value,
+    annotationsEnabled: annotationsEnabled.checked
   });
 }
 
 // Save settings on change for all elements
-[captureType, audioEnabled, micEnabled, quality, cameraPosition, cameraSize, frameRate, format, countdownSeconds].forEach(element => {
+[captureType, audioEnabled, micEnabled, quality, cameraPosition, cameraSize, frameRate, format, countdownSeconds, annotationsEnabled].forEach(element => {
   element.addEventListener('change', () => {
     saveSettings();
     updateQualityPreview();
@@ -265,7 +269,8 @@ startBtn.addEventListener('click', async () => {
     cameraShape: getCameraShape(),
     frameRate: frameRate.value,
     format: format.value,
-    countdownSeconds: parseInt(countdownSeconds.value) || 0
+    countdownSeconds: parseInt(countdownSeconds.value) || 0,
+    annotationsEnabled: annotationsEnabled.checked
   };
 
   try {
@@ -461,6 +466,7 @@ function setOptionsDisabled(disabled) {
   cameraSize.disabled = disabled;
   frameRate.disabled = disabled;
   format.disabled = disabled;
+  annotationsEnabled.disabled = disabled;
   
   // Disable shape radio buttons
   document.querySelectorAll('input[name="cameraShape"]').forEach(radio => {

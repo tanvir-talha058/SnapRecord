@@ -270,7 +270,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       const settings = await chrome.storage.sync.get([
         'captureType', 'audioEnabled', 'micEnabled', 'quality',
         'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
-        'frameRate', 'format'
+        'frameRate', 'format', 'annotationsEnabled'
       ]);
       
       const options = {
@@ -283,7 +283,8 @@ chrome.commands.onCommand.addListener(async (command) => {
         cameraSize: settings.cameraSize || 'medium',
         cameraShape: settings.cameraShape || 'circle',
         frameRate: settings.frameRate || '30',
-        format: settings.format || 'webm-vp9'
+        format: settings.format || 'webm-vp9',
+        annotationsEnabled: settings.annotationsEnabled !== false
       };
       
       await startRecording(options);
