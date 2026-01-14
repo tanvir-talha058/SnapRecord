@@ -1312,93 +1312,6 @@ function drawArrowOnCtx(ctx, fromX, fromY, toX, toY) {
   ctx.stroke();
 }
 
-function setupAnnotationEvents() {
-  const toolbar = annotationToolbar;
-  const canvas = annotationCanvas;
-  let startX, startY;
-  
-  // Tool selection
-  toolbar.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      toolbar.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentTool = btn.dataset.tool;
-    });
-  });
-  
-  // Color picker
-  toolbar.querySelector('.color-picker').addEventListener('input', (e) => {
-    currentColor = e.target.value;
-  });
-  
-  // Clear
-  toolbar.querySelector('[data-action="clear"]').addEventListener('click', () => {
-    annotationCtx.clearRect(0, 0, canvas.width, canvas.height);
-  });
-  
-  // Toggle drawing
-  const toggleBtn = toolbar.querySelector('[data-action="toggle"]');
-  toggleBtn.addEventListener('click', () => {
-    const isActive = canvas.style.pointerEvents === 'auto';
-    canvas.style.pointerEvents = isActive ? 'none' : 'auto';
-    toggleBtn.classList.toggle('drawing-active', !isActive);
-  });
-  
-  // Drawing events
-  canvas.addEventListener('mousedown', (e) => {
-    isDrawing = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    
-    if (currentTool === 'pen' || currentTool === 'highlighter') {
-      annotationCtx.beginPath();
-      annotationCtx.moveTo(startX, startY);
-    }
-  });
-  
-  canvas.addEventListener('mousemove', (e) => {
-    if (!isDrawing) return;
-    
-    if (currentTool === 'pen') {
-      annotationCtx.strokeStyle = currentColor;
-      annotationCtx.lineWidth = brushSize;
-      annotationCtx.lineCap = 'round';
-      annotationCtx.lineTo(e.clientX, e.clientY);
-      annotationCtx.stroke();
-    } else if (currentTool === 'highlighter') {
-      annotationCtx.strokeStyle = currentColor + '40';
-      annotationCtx.lineWidth = 20;
-      annotationCtx.lineCap = 'round';
-      annotationCtx.lineTo(e.clientX, e.clientY);
-      annotationCtx.stroke();
-    }
-  });
-  
-  canvas.addEventListener('mouseup', (e) => {
-    if (!isDrawing) return;
-    isDrawing = false;
-    
-    const endX = e.clientX;
-    const endY = e.clientY;
-    
-    if (currentTool === 'arrow') {
-      drawArrow(startX, startY, endX, endY);
-    } else if (currentTool === 'rectangle') {
-      annotationCtx.strokeStyle = currentColor;
-      annotationCtx.lineWidth = brushSize;
-      annotationCtx.strokeRect(startX, startY, endX - startX, endY - startY);
-    }
-  });
-  
-  canvas.addEventListener('mouseleave', () => {
-    isDrawing = false;
-  });
-}
-
-function drawArrow(fromX, fromY, toX, toY) {
-  drawArrowOnCtx(annotationCtx, fromX, fromY, toX, toY);
-}
-
 function removeAnnotationTools() {
   // Remove keyboard event listener
   if (keyboardHandler) {
@@ -1812,14 +1725,14 @@ function startRecordingInContent(stream, options) {
     removeAnnotationTools();
     
     // Save to recording history
-    saveToHistory(filename, options);
+    saveRecordingToHistory(filename, options);
   };
   
   // Track recording start time for duration calculation
   const recordingStartTime = Date.now();
   
   // Save recording to history
-  function saveToHistory(filename, options) {
+  function saveRecordingToHistory(filename, options) {
     const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
     const historyEntry = {
       filename,
