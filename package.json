@@ -1,0 +1,25 @@
+{
+  "name": "snaprecord",
+  "version": "1.0.0",
+  "description": "A lightweight, feature-rich screen recording extension for Chromium-based browsers (Chrome, Edge, Brave, Opera, etc.). SnapRecord fills the gaps in existing screen recording extensions by providing a complete set of features while maintaining a minimal footprint with zero external dependencies.",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tanvir-talha058/SnapRecord.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tanvir-talha058/SnapRecord/issues"
+  },
+  "homepage": "https://github.com/tanvir-talha058/SnapRecord#readme",
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "globals": "^17.0.0",
+    "jest": "^30.2.0"
+  }
+}
