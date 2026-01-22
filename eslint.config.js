@@ -18,7 +18,11 @@ module.exports = [
         },
         rules: {
             'no-undef': 'error',
-            'no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],
+            'no-unused-vars': ['warn', {
+                'argsIgnorePattern': '^_',
+                'varsIgnorePattern': '^_',
+                'caughtErrorsIgnorePattern': '^_'
+            }],
             'no-prototype-builtins': 'off',
             'no-redeclare': 'off' // We have some redeclarations due to top-level script scope issues in analysis, suppressing for now
         }

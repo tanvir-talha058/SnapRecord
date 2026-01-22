@@ -25,7 +25,7 @@ const annotationsEnabled = document.getElementById('annotationsEnabled');
 let startTime = 0;
 let pausedTime = 0;
 let timerInterval = null;
-let isPaused = false;
+let _isPaused = false;
 
 // Tab Navigation
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -36,7 +36,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       b.setAttribute('aria-selected', 'false');
     });
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
+
     // Add active to clicked tab and corresponding content
     btn.classList.add('active');
     btn.setAttribute('aria-selected', 'true');
@@ -58,7 +58,7 @@ function setCameraShape(value) {
 
 // Load saved settings
 chrome.storage.sync.get([
-  'captureType', 'audioEnabled', 'micEnabled', 'quality', 
+  'captureType', 'audioEnabled', 'micEnabled', 'quality',
   'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
   'frameRate', 'format', 'countdownSeconds', 'annotationsEnabled'
 ], (result) => {
@@ -78,7 +78,7 @@ chrome.storage.sync.get([
   if (result.countdownSeconds !== undefined) countdownSeconds.value = result.countdownSeconds;
   if (result.annotationsEnabled !== undefined) annotationsEnabled.checked = result.annotationsEnabled;
   else annotationsEnabled.checked = true; // Default to enabled
-  
+
   updateQualityPreview();
 });
 
@@ -137,16 +137,16 @@ async function populateMicrophoneDevices() {
     await navigator.mediaDevices.getUserMedia({ audio: true });
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter(device => device.kind === 'audioinput');
-    
+
     micDevice.innerHTML = '<option value="default">Default Microphone</option>';
-    
+
     audioInputs.forEach((device, index) => {
       const option = document.createElement('option');
       option.value = device.deviceId;
       option.textContent = device.label || `Microphone ${index + 1}`;
       micDevice.appendChild(option);
     });
-    
+
     // Load saved device
     chrome.storage.sync.get(['micDeviceId'], (result) => {
       if (result.micDeviceId) {
@@ -177,13 +177,13 @@ function updateQualityPreview() {
     '1440': { width: 2560, height: 1440, size: 25 },
     '2160': { width: 3840, height: 2160, size: 50 }
   };
-  
+
   const frameRateMultipliers = {
     '24': 0.8,
     '30': 1,
     '60': 1.8
   };
-  
+
   const formatMultipliers = {
     'webm-vp9': 1,
     'webm-vp8': 1.2,
@@ -191,13 +191,13 @@ function updateQualityPreview() {
     'mp4': 1.1,
     'gif': 3
   };
-  
+
   const res = resolutions[quality.value] || resolutions['1080'];
   const fpsMulti = frameRateMultipliers[frameRate.value] || 1;
   const formatMulti = formatMultipliers[format.value] || 1;
-  
+
   const estimatedSize = Math.round(res.size * fpsMulti * formatMulti);
-  
+
   fileSizeEstimate.textContent = `~${estimatedSize} MB`;
   resolutionPreview.textContent = `${res.width} × ${res.height}`;
 }
@@ -206,16 +206,16 @@ function updateQualityPreview() {
 chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
   if (response && response.isRecording) {
     updateUIForRecording();
-    
+
     // Restore timer from background state
     if (response.recordingStartTime && response.recordingStartTime > 0) {
       const elapsed = Date.now() - response.recordingStartTime - (response.pausedDuration || 0);
       startTime = Date.now() - elapsed;
       pausedTime = 0;
-      
+
       // Update timer display immediately
       updateTimer();
-      
+
       if (response.isPaused) {
         pausedTime = elapsed;
         updateUIForPaused();
@@ -276,17 +276,17 @@ startBtn.addEventListener('click', async () => {
   try {
     startBtn.disabled = true;
     startBtn.innerHTML = ICONS.loading + '<span class="btn-text">Starting...</span>';
-    
-    const response = await chrome.runtime.sendMessage({ 
-      action: 'startRecording', 
-      options 
+
+    const response = await chrome.runtime.sendMessage({
+      action: 'startRecording',
+      options
     });
-    
+
     if (response && response.success) {
       updateUIForRecording();
       statusText.textContent = 'Starting...';
       timerElement.textContent = '00:00:00';
-      
+
       // Poll for actual recording start (after countdown completes)
       const pollForStart = setInterval(() => {
         chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
@@ -409,7 +409,7 @@ function updateTimer() {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  timerElement.textContent = 
+  timerElement.textContent =
     `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
@@ -421,11 +421,11 @@ function updateUIForRecording() {
   stopBtn.disabled = false;
   resumeBtn.style.display = 'none';
   pauseBtn.style.display = 'flex';
-  
+
   statusText.textContent = 'Recording...';
   recordingStatus.classList.add('recording');
   recordingStatus.classList.remove('paused');
-  
+
   // Disable all options during recording
   setOptionsDisabled(true);
 }
@@ -434,26 +434,26 @@ function updateUIForPaused() {
   pauseBtn.style.display = 'none';
   resumeBtn.style.display = 'flex';
   resumeBtn.disabled = false;
-  
+
   statusText.textContent = 'Paused';
   recordingStatus.classList.remove('recording');
   recordingStatus.classList.add('paused');
-  
+
   pauseTimer();
-  isPaused = true;
+  _isPaused = true;
 }
 
 function updateUIForResumed() {
   resumeBtn.style.display = 'none';
   pauseBtn.style.display = 'flex';
   pauseBtn.disabled = false;
-  
+
   statusText.textContent = 'Recording...';
   recordingStatus.classList.add('recording');
   recordingStatus.classList.remove('paused');
-  
+
   resumeTimer();
-  isPaused = false;
+  _isPaused = false;
 }
 
 function setOptionsDisabled(disabled) {
@@ -467,12 +467,12 @@ function setOptionsDisabled(disabled) {
   frameRate.disabled = disabled;
   format.disabled = disabled;
   annotationsEnabled.disabled = disabled;
-  
+
   // Disable shape radio buttons
   document.querySelectorAll('input[name="cameraShape"]').forEach(radio => {
     radio.disabled = disabled;
   });
-  
+
   // Disable tab navigation during recording
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.disabled = disabled;
@@ -489,12 +489,12 @@ function resetUI() {
   stopBtn.disabled = true;
   pauseBtn.style.display = 'flex';
   resumeBtn.style.display = 'none';
-  
+
   statusText.textContent = 'Ready to record';
   recordingStatus.classList.remove('recording', 'paused');
-  
+
   // Re-enable all options
   setOptionsDisabled(false);
-  
-  isPaused = false;
+
+  _isPaused = false;
 }

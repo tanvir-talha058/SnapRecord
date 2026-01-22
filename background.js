@@ -19,7 +19,7 @@ async function initializeState() {
     if (recordingState.isRecording && recordingState.recordingTabId) {
       try {
         await chrome.tabs.get(recordingState.recordingTabId);
-      } catch (e) {
+      } catch (_e) {
         // Tab no longer exists, reset state
         console.log('Recording tab missing, resetting state');
         await chrome.storage.local.set({ recordingState: initialState });
@@ -53,34 +53,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const state = await getState();
 
       switch (request.action) {
-        case 'getRecordingState':
+        case 'getRecordingState': {
           sendResponse({
             ...state,
             pausedDuration: state.isPaused ? state.pausedDuration + (Date.now() - state.pauseStartTime) : state.pausedDuration
           });
           break;
+        }
 
-        case 'startRecording':
+        case 'startRecording': {
           const result = await startRecording(request.options);
           sendResponse(result);
           break;
+        }
 
-        case 'pauseRecording':
+        case 'pauseRecording': {
           const pauseResult = await pauseRecording();
           sendResponse(pauseResult);
           break;
+        }
 
-        case 'resumeRecording':
+        case 'resumeRecording': {
           const resumeResult = await resumeRecording();
           sendResponse(resumeResult);
           break;
+        }
 
-        case 'stopRecording':
+        case 'stopRecording': {
           const stopResult = await stopRecording();
           sendResponse(stopResult);
           break;
+        }
 
-        case 'recordingStarted':
+        case 'recordingStarted': {
           // Content script notifies us that recording actually started (after countdown)
           await updateState({
             isContentScriptRecording: true,
@@ -94,6 +99,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
           break;
+        }
 
         default:
           sendResponse({ success: false, error: 'Unknown action' });
@@ -136,7 +142,7 @@ async function startRecording(options) {
     try {
       const pingResponse = await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
       contentScriptReady = pingResponse && pingResponse.ready;
-    } catch (err) {
+    } catch (_err) {
       // Content script not loaded yet, need to inject
       contentScriptReady = false;
     }
