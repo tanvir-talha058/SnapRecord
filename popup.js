@@ -45,12 +45,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // Get camera shape from radio buttons
+/**
+ * Retrieves the currently selected camera shape.
+ * @returns {string} The selected shape value.
+ */
 function getCameraShape() {
   const selected = document.querySelector('input[name="cameraShape"]:checked');
   return selected ? selected.value : 'circle';
 }
 
 // Set camera shape radio buttons
+/**
+ * Sets the camera shape radio button programmatically.
+ * @param {string} value - The shape value to select.
+ */
 function setCameraShape(value) {
   const radio = document.querySelector(`input[name="cameraShape"][value="${value}"]`);
   if (radio) radio.checked = true;
@@ -83,6 +91,9 @@ chrome.storage.sync.get([
 });
 
 // Save all settings
+/**
+ * Saves all current UI settings to synchronized storage.
+ */
 function saveSettings() {
   chrome.storage.sync.set({
     captureType: captureType.value,
@@ -131,6 +142,9 @@ micEnabled.addEventListener('change', () => {
 // Populate microphone devices
 const micDevice = document.getElementById('micDevice');
 
+/**
+ * Populates the microphone selection dropdown with available audio input devices.
+ */
 async function populateMicrophoneDevices() {
   try {
     // Request permission first to get device labels
@@ -154,7 +168,7 @@ async function populateMicrophoneDevices() {
       }
     });
   } catch (error) {
-    console.log('Could not enumerate microphones:', error);
+    console.warn('Could not enumerate microphones:', error);
   }
 }
 
@@ -169,6 +183,9 @@ if (micEnabled.checked) {
 }
 
 // Update quality preview
+/**
+ * Updates the file size estimation and resolution preview based on selected settings.
+ */
 function updateQualityPreview() {
   const resolutions = {
     '480': { width: 854, height: 480, size: 5 },
@@ -211,13 +228,13 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
     if (response.recordingStartTime && response.recordingStartTime > 0) {
       const elapsed = Date.now() - response.recordingStartTime - (response.pausedDuration || 0);
       startTime = Date.now() - elapsed;
-      pausedTime = 0;
+      // Initialize pausedTime to elapsed so startTimer() uses it correctly
+      pausedTime = elapsed;
 
       // Update timer display immediately
       updateTimer();
 
       if (response.isPaused) {
-        pausedTime = elapsed;
         updateUIForPaused();
       } else {
         startTimer();
@@ -229,19 +246,34 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
       // Poll for actual recording start
       const pollForStart = setInterval(() => {
         chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
-          if (pollResponse && pollResponse.recordingStartTime > 0) {
+          if (chrome.runtime.lastError) {
+            console.warn('Polling error:', chrome.runtime.lastError);
+            return;
+          }
+          if (pollResponse && pollResponse.recordingStartTime > 0 && pollResponse.isContentScriptRecording) {
             clearInterval(pollForStart);
-            const elapsed = Date.now() - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
-            startTime = Date.now() - elapsed;
+            const now = Date.now();
+            const elapsed = now - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
+            startTime = now - elapsed;
             pausedTime = 0;
-            updateTimer();
+            
+            // Update UI immediately
             statusText.textContent = 'Recording...';
+            updateTimer();
+            
+            // Start timer interval if not paused
             if (!pollResponse.isPaused) {
-              startTimer();
+              if (timerInterval) {
+                clearInterval(timerInterval);
+              }
+              timerInterval = setInterval(updateTimer, 1000);
             }
+          } else if (!pollResponse || !pollResponse.isRecording) {
+            // Recording was cancelled
+            clearInterval(pollForStart);
           }
         });
-      }, 500);
+      }, 200);
     }
   }
 });
@@ -290,21 +322,34 @@ startBtn.addEventListener('click', async () => {
       // Poll for actual recording start (after countdown completes)
       const pollForStart = setInterval(() => {
         chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
-          if (pollResponse && pollResponse.recordingStartTime > 0) {
+          if (chrome.runtime.lastError) {
+            console.warn('Polling error:', chrome.runtime.lastError);
+            return;
+          }
+          if (pollResponse && pollResponse.recordingStartTime > 0 && pollResponse.isContentScriptRecording) {
             clearInterval(pollForStart);
-            const elapsed = Date.now() - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
-            startTime = Date.now() - elapsed;
+            // Calculate elapsed time accounting for any paused duration
+            const now = Date.now();
+            const elapsed = now - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
+            startTime = now - elapsed;
             pausedTime = 0;
-            updateTimer();
+            
+            // Update UI immediately
             statusText.textContent = 'Recording...';
-            startTimer();
+            updateTimer();
+            
+            // Start the timer interval
+            if (timerInterval) {
+              clearInterval(timerInterval);
+            }
+            timerInterval = setInterval(updateTimer, 1000);
           } else if (!pollResponse || !pollResponse.isRecording) {
             // Recording was cancelled or failed
             clearInterval(pollForStart);
             resetUI();
           }
         });
-      }, 300);
+      }, 200);
     } else {
       alert('Failed to start recording: ' + (response?.error || 'Unknown error'));
       startBtn.disabled = false;
@@ -371,6 +416,9 @@ stopBtn.addEventListener('click', async () => {
 });
 
 // Timer functions
+/**
+ * Starts the recording timer.
+ */
 function startTimer() {
   // Clear any existing timer first
   if (timerInterval) {
@@ -382,6 +430,9 @@ function startTimer() {
   timerInterval = setInterval(updateTimer, 1000);
 }
 
+/**
+ * Stops and resets the recording timer.
+ */
 function stopTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
@@ -391,6 +442,9 @@ function stopTimer() {
   timerElement.textContent = '00:00:00';
 }
 
+/**
+ * Pauses the recording timer.
+ */
 function pauseTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
@@ -403,6 +457,9 @@ function resumeTimer() {
   startTimer();
 }
 
+/**
+ * Updates the timer display element with the elapsed time.
+ */
 function updateTimer() {
   const elapsed = Date.now() - startTime;
   const totalSeconds = Math.floor(elapsed / 1000);
@@ -414,6 +471,9 @@ function updateTimer() {
 }
 
 // UI state management
+/**
+ * Updates the UI elements to reflect the recording state.
+ */
 function updateUIForRecording() {
   startBtn.disabled = true;
   startBtn.innerHTML = ICONS.record + '<span class="btn-text">Recording...</span>';
@@ -456,6 +516,10 @@ function updateUIForResumed() {
   _isPaused = false;
 }
 
+/**
+ * Enables or disables validation options during recording.
+ * @param {boolean} disabled - Whether options should be disabled.
+ */
 function setOptionsDisabled(disabled) {
   captureType.disabled = disabled;
   audioEnabled.disabled = disabled;
@@ -481,6 +545,9 @@ function setOptionsDisabled(disabled) {
   });
 }
 
+/**
+ * Resets the UI to the initial ready state.
+ */
 function resetUI() {
   startBtn.disabled = false;
   startBtn.innerHTML = ICONS.record + '<span class="btn-text">Start Recording</span>';

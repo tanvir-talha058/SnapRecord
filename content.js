@@ -15,6 +15,11 @@
   let cameraOverlay = null;
 
   // Utility function for generating filenames
+  /**
+   * Generates a timestamped filename for the recording.
+   * @param {string} [extension='webm'] - The file extension.
+   * @returns {string} The generated filename.
+   */
   function generateRecordingFilename(extension = 'webm') {
     const date = new Date();
     const year = date.getFullYear();
@@ -28,6 +33,11 @@
   }
 
   // Camera overlay management
+  /**
+   * Creates and initializes the camera overlay element.
+   * @param {Object} options - Camera settings (size, position, shape).
+   * @returns {HTMLVideoElement} The video element inside the overlay.
+   */
   function createCameraOverlay(options) {
     // Remove existing overlay if present
     removeCameraOverlay();
@@ -125,6 +135,10 @@
     return video;
   }
 
+  /**
+   * Makes an element draggable via mouse interactions.
+   * @param {HTMLElement} element - The element to make draggable.
+   */
   function makeDraggable(element) {
     let isDragging = false;
     let startX, startY, initialX, initialY;
@@ -168,6 +182,12 @@
     });
   }
 
+  /**
+   * Makes an element resizable via a handle.
+   * @param {HTMLElement} element - The element to resize.
+   * @param {HTMLElement} handle - The resize handle element.
+   * @param {string} _shape - The shape of the element (unused in logic but kept for sig).
+   */
   function makeResizable(element, handle, _shape) {
     let isResizing = false;
     let startX, startY, startWidth, startHeight;
@@ -207,6 +227,9 @@
     });
   }
 
+  /**
+   * Removes the camera overlay and stops the camera stream.
+   */
   function removeCameraOverlay() {
     if (cameraOverlay) {
       cameraOverlay.remove();
@@ -219,6 +242,11 @@
   }
 
   // Countdown overlay
+  /**
+   * Displays a countdown overlay.
+   * @param {number} seconds - Number of seconds to count down.
+   * @returns {Promise<void>} Resolves when countdown finishes.
+   */
   function showCountdown(seconds) {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
@@ -292,6 +320,9 @@
   let _isToolbarMinimized = false;
   let isDrawingEnabled = false;
 
+  /**
+   * Initializes annotation tools (canvas, toolbar, events).
+   */
   function createAnnotationTools() {
     removeAnnotationTools();
 
@@ -753,6 +784,9 @@
     setupAnnotationEvents();
   }
 
+  /**
+   * Makes the annotation toolbar draggable.
+   */
   function makeToolbarDraggable() {
     if (!annotationToolbar) return;
 
@@ -811,6 +845,9 @@
     });
   }
 
+  /**
+   * Handles canvas resizing to match window size, preserving content.
+   */
   function handleCanvasResize() {
     if (!annotationCanvas || !tempCanvas) return;
 
@@ -833,6 +870,9 @@
     tempCtx.lineJoin = 'round';
   }
 
+  /**
+   * Saves the current canvas state to the undo history.
+   */
   function saveToHistory() {
     if (!annotationCanvas) return;
 
@@ -945,6 +985,9 @@
   // Store keyboard handler reference for proper cleanup
   let keyboardHandler = null;
 
+  /**
+   * Sets up event listeners for annotation tools (shortcuts, mouse/touch drawing).
+   */
   function setupAnnotationEvents() {
     const toolbar = annotationToolbar;
     const canvas = annotationCanvas;
@@ -1293,6 +1336,14 @@
     }
   }
 
+  /**
+   * Draws an arrow on the given context.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} fromX - Start X.
+   * @param {number} fromY - Start Y.
+   * @param {number} toX - End X.
+   * @param {number} toY - End Y.
+   */
   function drawArrowOnCtx(ctx, fromX, fromY, toX, toY) {
     const headLength = 15 + brushSize;
     const angle = Math.atan2(toY - fromY, toX - fromX);
@@ -1312,6 +1363,9 @@
     ctx.stroke();
   }
 
+  /**
+   * Removes annotation tools and cleans up listeners.
+   */
   function removeAnnotationTools() {
     // Remove keyboard event listener
     if (keyboardHandler) {
@@ -1354,6 +1408,11 @@
   }
 
 
+  /**
+   * Starts the camera stream for the overlay.
+   * @param {Object} options - Camera options.
+   * @returns {Promise<MediaStream>} The camera stream.
+   */
   async function startCamera(options) {
     try {
       const videoElement = createCameraOverlay(options);
@@ -1504,6 +1563,12 @@
     return false;
   });
 
+  /**
+   * Handles the request to start capture (screen/window/tab).
+   * @param {string} captureType - Type of capture ('screen', 'window', 'tab').
+   * @param {Object} options - Recording options.
+   * @returns {Promise<Object>} Result object.
+   */
   async function handleStartCapture(captureType, options) {
     try {
       // Clean up any existing stream
@@ -1616,6 +1681,11 @@
     }
   }
 
+  /**
+   * Internal function to manage the MediaRecorder and saving process.
+   * @param {MediaStream} stream - The media stream to record.
+   * @param {Object} options - Recording options.
+   */
   function startRecordingInContent(stream, options) {
     // Show countdown after user has selected what to capture
     const countdownSeconds = parseInt(options.countdownSeconds) || 0;

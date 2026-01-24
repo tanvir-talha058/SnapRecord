@@ -4,7 +4,14 @@
   "description": "A lightweight, feature-rich screen recording extension for Chromium-based browsers (Chrome, Edge, Brave, Opera, etc.). SnapRecord fills the gaps in existing screen recording extensions by providing a complete set of features while maintaining a minimal footprint with zero external dependencies.",
   "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "jest": {
+    "setupFiles": [
+      "./tests/setup.js"
+    ],
+    "testEnvironment": "node"
   },
   "repository": {
     "type": "git",

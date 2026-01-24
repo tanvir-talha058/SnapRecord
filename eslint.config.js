@@ -11,6 +11,7 @@ module.exports = [
                 ...globals.browser,
                 ...globals.webextensions,
                 ...globals.node,
+                ...globals.jest,
                 chrome: 'readonly',
                 CaptureController: 'readonly',
                 MediaRecorder: 'readonly'

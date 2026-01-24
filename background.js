@@ -1,4 +1,15 @@
 // State management
+/**
+ * Initial state of the recording session.
+ * @typedef {Object} RecordingState
+ * @property {boolean} isRecording - Whether a recording is currently active.
+ * @property {boolean} isPaused - Whether the recording is currently paused.
+ * @property {number|null} recordingTabId - The ID of the tab being recorded.
+ * @property {boolean} isContentScriptRecording - Whether the content script has started the MediaRecorder.
+ * @property {number} recordingStartTime - Timestamp when recording started.
+ * @property {number} pausedDuration - Total time in milliseconds that the recording has been paused.
+ * @property {number} pauseStartTime - Timestamp when the current pause started.
+ */
 const initialState = {
   isRecording: false,
   isPaused: false,
@@ -9,7 +20,11 @@ const initialState = {
   pauseStartTime: 0
 };
 
-// Initialize state
+/**
+ * Initializes the extension state from local storage.
+ * If no state exists, it sets the initial state.
+ * If a recording was active but the tab is gone, it resets the state.
+ */
 async function initializeState() {
   const { recordingState } = await chrome.storage.local.get('recordingState');
   if (!recordingState) {
@@ -21,20 +36,27 @@ async function initializeState() {
         await chrome.tabs.get(recordingState.recordingTabId);
       } catch (_e) {
         // Tab no longer exists, reset state
-        console.log('Recording tab missing, resetting state');
+        console.warn('Recording tab missing, resetting state');
         await chrome.storage.local.set({ recordingState: initialState });
       }
     }
   }
 }
 
-// Get current state
+/**
+ * Retrieves the current recording state from local storage.
+ * @returns {Promise<RecordingState>} The current state object.
+ */
 async function getState() {
   const { recordingState } = await chrome.storage.local.get('recordingState');
   return recordingState || initialState;
 }
 
-// Update state
+/**
+ * Updates the recording state in local storage.
+ * @param {Partial<RecordingState>} updates - The partial state to merge.
+ * @returns {Promise<RecordingState>} The updated state object.
+ */
 async function updateState(updates) {
   const currentState = await getState();
   const newState = { ...currentState, ...updates };
@@ -46,7 +68,9 @@ async function updateState(updates) {
 chrome.runtime.onInstalled.addListener(initializeState);
 chrome.runtime.onStartup.addListener(initializeState);
 
-// Message handler
+/**
+ * Handles messages from other parts of the extension (popup, content scripts).
+ */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   (async () => {
     try {
@@ -113,7 +137,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true; // Keep the message channel open for async response
 });
 
-// Start recording function
+/**
+ * Initiates the recording process.
+ * Check for active tab, injects content script if needed, and sends start command.
+ * @param {Object} options - Recording options (quality, audio, etc.).
+ * @returns {Promise<{success: boolean, error?: string}>} Result of the operation.
+ */
 async function startRecording(options) {
   try {
     const state = await getState();
@@ -176,7 +205,7 @@ async function startRecording(options) {
         if (response) break;
       } catch (err) {
         lastError = err;
-        console.log(`Retry ${6 - retries}/5 - Content script communication failed:`, err.message);
+        console.warn(`Retry ${6 - retries}/5 - Content script communication failed:`, err.message);
       }
       retries--;
       if (retries > 0) {
@@ -220,7 +249,10 @@ async function startRecording(options) {
   }
 }
 
-// Pause recording
+/**
+ * Pauses the current recording.
+ * @returns {Promise<{success: boolean, error?: string}>} Result of the operation.
+ */
 async function pauseRecording() {
   const state = await getState();
   if (!state.recordingTabId) {
@@ -241,16 +273,19 @@ async function pauseRecording() {
       await chrome.action.setBadgeBackgroundColor({ color: '#FFA500' });
       return { success: true };
     } else {
-      console.log('Pause failed:', response?.error);
+      console.warn('Pause failed:', response?.error);
       return { success: false, error: response?.error || 'Failed to pause' };
     }
   } catch (err) {
-    console.log('Error pausing recording:', err);
+    console.error('Error pausing recording:', err);
     return { success: false, error: err.message };
   }
 }
 
-// Resume recording
+/**
+ * Resumes the current recording.
+ * @returns {Promise<{success: boolean, error?: string}>} Result of the operation.
+ */
 async function resumeRecording() {
   const state = await getState();
   if (!state.recordingTabId) {
@@ -279,16 +314,19 @@ async function resumeRecording() {
       await chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
       return { success: true };
     } else {
-      console.log('Resume failed:', response?.error);
+      console.warn('Resume failed:', response?.error);
       return { success: false, error: response?.error || 'Failed to resume' };
     }
   } catch (err) {
-    console.log('Error resuming recording:', err);
+    console.error('Error resuming recording:', err);
     return { success: false, error: err.message };
   }
 }
 
-// Stop recording
+/**
+ * Stops the current recording.
+ * @returns {Promise<{success: boolean, error?: string}>} Result of the operation.
+ */
 async function stopRecording() {
   const state = await getState();
   const tabId = state.recordingTabId;
@@ -304,17 +342,13 @@ async function stopRecording() {
       });
       return { success: true };
     } catch (err) {
-      console.log('Error stopping content script recording:', err);
+      console.error('Error stopping content script recording:', err);
       return { success: true }; // Still return success as recording is stopped and state is reset
     }
   }
 
   return { success: true };
 }
-
-// Clean up on extension shutdown? NO, persistent state handles this.
-// But we might want to check if the tab is still alive when the service worker wakes up?
-// For now, let's just keep the state simple.
 
 // Keyboard shortcut handlers
 chrome.commands.onCommand.addListener(async (command) => {
@@ -357,3 +391,17 @@ chrome.commands.onCommand.addListener(async (command) => {
     }
   }
 });
+
+// Export for testing
+if (typeof module !== 'undefined') {
+  module.exports = {
+    initialState,
+    initializeState,
+    getState,
+    updateState,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording
+  };
+}
