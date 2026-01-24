@@ -78,10 +78,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       switch (request.action) {
         case 'getRecordingState': {
-          sendResponse({
+          const responseState = {
             ...state,
             pausedDuration: state.isPaused ? state.pausedDuration + (Date.now() - state.pauseStartTime) : state.pausedDuration
-          });
+          };
+          console.log('getRecordingState response:', responseState);
+          sendResponse(responseState);
           break;
         }
 
@@ -111,13 +113,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case 'recordingStarted': {
           // Content script notifies us that recording actually started (after countdown)
-          await updateState({
+          const newState = await updateState({
             isContentScriptRecording: true,
             isRecording: true,
             recordingStartTime: Date.now(),
             pausedDuration: 0,
             pauseStartTime: 0
           });
+          
+          console.log('Recording started, new state:', newState);
 
           await chrome.action.setBadgeText({ text: 'REC' });
           await chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });

@@ -221,23 +221,37 @@ function updateQualityPreview() {
 
 // Check recording state on popup open
 chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
+  if (chrome.runtime.lastError) {
+    console.warn('Error getting recording state:', chrome.runtime.lastError);
+    return;
+  }
+  
+  console.log('Recording state on popup open:', response);
+  
   if (response && response.isRecording) {
     updateUIForRecording();
 
     // Restore timer from background state
     if (response.recordingStartTime && response.recordingStartTime > 0) {
-      const elapsed = Date.now() - response.recordingStartTime - (response.pausedDuration || 0);
-      startTime = Date.now() - elapsed;
-      // Initialize pausedTime to elapsed so startTimer() uses it correctly
-      pausedTime = elapsed;
+      const now = Date.now();
+      const elapsed = now - response.recordingStartTime - (response.pausedDuration || 0);
+      startTime = now - elapsed;
+      pausedTime = 0;
 
       // Update timer display immediately
       updateTimer();
+      
+      statusText.textContent = response.isPaused ? 'Paused' : 'Recording...';
 
       if (response.isPaused) {
         updateUIForPaused();
+        pausedTime = elapsed; // Store for resume
       } else {
-        startTimer();
+        // Start the timer interval
+        if (timerInterval) {
+          clearInterval(timerInterval);
+        }
+        timerInterval = setInterval(updateTimer, 1000);
       }
     } else {
       // Recording is starting (countdown in progress), show "Starting..." state
@@ -250,7 +264,8 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
             console.warn('Polling error:', chrome.runtime.lastError);
             return;
           }
-          if (pollResponse && pollResponse.recordingStartTime > 0 && pollResponse.isContentScriptRecording) {
+          console.log('Polling response:', pollResponse);
+          if (pollResponse && pollResponse.recordingStartTime > 0) {
             clearInterval(pollForStart);
             const now = Date.now();
             const elapsed = now - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
@@ -326,7 +341,8 @@ startBtn.addEventListener('click', async () => {
             console.warn('Polling error:', chrome.runtime.lastError);
             return;
           }
-          if (pollResponse && pollResponse.recordingStartTime > 0 && pollResponse.isContentScriptRecording) {
+          console.log('Start button polling:', pollResponse);
+          if (pollResponse && pollResponse.recordingStartTime > 0) {
             clearInterval(pollForStart);
             // Calculate elapsed time accounting for any paused duration
             const now = Date.now();
@@ -461,13 +477,22 @@ function resumeTimer() {
  * Updates the timer display element with the elapsed time.
  */
 function updateTimer() {
+  if (!timerElement) {
+    console.error('Timer element not found!');
+    return;
+  }
+  if (!startTime || startTime <= 0) {
+    console.warn('Invalid startTime:', startTime);
+    return;
+  }
   const elapsed = Date.now() - startTime;
   const totalSeconds = Math.floor(elapsed / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  timerElement.textContent =
-    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  timerElement.textContent = timeString;
+  console.log('Timer updated:', timeString);
 }
 
 // UI state management

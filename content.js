@@ -1831,6 +1831,12 @@
       chrome.runtime.sendMessage({
         action: 'recordingStarted',
         inContentScript: true
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Failed to notify background of recording start:', chrome.runtime.lastError);
+        } else {
+          console.log('Recording started notification sent successfully:', response);
+        }
       });
     };
 
