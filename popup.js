@@ -26,6 +26,36 @@ let startTime = 0;
 let pausedTime = 0;
 let timerInterval = null;
 let _isPaused = false;
+let pollInterval = null;
+
+// Listen for recording state changes from background
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+  if (message.action === 'recordingStateChanged') {
+    console.log('Recording state changed:', message.state);
+    if (message.state.isRecording && message.state.recordingStartTime > 0) {
+      const now = Date.now();
+      const elapsed = now - message.state.recordingStartTime - (message.state.pausedDuration || 0);
+      startTime = now - elapsed;
+      pausedTime = 0;
+      
+      statusText.textContent = 'Recording...';
+      updateUIForRecording();
+      updateTimer();
+      
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      timerInterval = setInterval(updateTimer, 1000);
+      
+      // Clear any polling
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    }
+  }
+  return true;
+});
 
 // Tab Navigation
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -258,7 +288,10 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
       statusText.textContent = 'Starting...';
       timerElement.textContent = '00:00:00';
       // Poll for actual recording start
-      const pollForStart = setInterval(() => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      pollInterval = setInterval(() => {
         chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
           if (chrome.runtime.lastError) {
             console.warn('Polling error:', chrome.runtime.lastError);
@@ -266,7 +299,8 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
           }
           console.log('Polling response:', pollResponse);
           if (pollResponse && pollResponse.recordingStartTime > 0) {
-            clearInterval(pollForStart);
+            clearInterval(pollInterval);
+            pollInterval = null;
             const now = Date.now();
             const elapsed = now - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
             startTime = now - elapsed;
@@ -285,7 +319,8 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
             }
           } else if (!pollResponse || !pollResponse.isRecording) {
             // Recording was cancelled
-            clearInterval(pollForStart);
+            clearInterval(pollInterval);
+            pollInterval = null;
           }
         });
       }, 200);
@@ -304,6 +339,13 @@ const ICONS = {
 
 // Start recording
 startBtn.addEventListener('click', async () => {
+  // Check if the current tab is a valid page for recording
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
+    alert('Recording on browser internal pages is not allowed. Please navigate to a regular webpage to start recording.');
+    return;
+  }
+
   const options = {
     captureType: captureType.value,
     audioEnabled: audioEnabled.checked,
@@ -335,7 +377,10 @@ startBtn.addEventListener('click', async () => {
       timerElement.textContent = '00:00:00';
 
       // Poll for actual recording start (after countdown completes)
-      const pollForStart = setInterval(() => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      pollInterval = setInterval(() => {
         chrome.runtime.sendMessage({ action: 'getRecordingState' }, (pollResponse) => {
           if (chrome.runtime.lastError) {
             console.warn('Polling error:', chrome.runtime.lastError);
@@ -343,7 +388,8 @@ startBtn.addEventListener('click', async () => {
           }
           console.log('Start button polling:', pollResponse);
           if (pollResponse && pollResponse.recordingStartTime > 0) {
-            clearInterval(pollForStart);
+            clearInterval(pollInterval);
+            pollInterval = null;
             // Calculate elapsed time accounting for any paused duration
             const now = Date.now();
             const elapsed = now - pollResponse.recordingStartTime - (pollResponse.pausedDuration || 0);
@@ -361,7 +407,8 @@ startBtn.addEventListener('click', async () => {
             timerInterval = setInterval(updateTimer, 1000);
           } else if (!pollResponse || !pollResponse.isRecording) {
             // Recording was cancelled or failed
-            clearInterval(pollForStart);
+            clearInterval(pollInterval);
+            pollInterval = null;
             resetUI();
           }
         });

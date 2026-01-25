@@ -123,6 +123,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           
           console.log('Recording started, new state:', newState);
 
+          // Broadcast to popup that recording has started
+          try {
+            chrome.runtime.sendMessage({
+              action: 'recordingStateChanged',
+              state: newState
+            }).catch(() => {
+              // Popup might not be open, ignore error
+            });
+          } catch (_e) {
+            // Ignore - popup might not be open
+          }
+
           await chrome.action.setBadgeText({ text: 'REC' });
           await chrome.action.setBadgeBackgroundColor({ color: '#FF0000' });
           sendResponse({ success: true });
