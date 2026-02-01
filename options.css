@@ -9,15 +9,17 @@ body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 40px 20px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .container {
   max-width: 800px;
   margin: 0 auto;
   background: white;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 48px 32px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.13);
 }
 
 header {
@@ -40,9 +42,10 @@ header {
 }
 
 header h1 {
-  font-size: 32px;
+  font-size: 36px;
   color: #667eea;
   margin-bottom: 0;
+  outline: none;
 }
 
 .subtitle {
@@ -66,28 +69,31 @@ header h1 {
   margin-bottom: 25px;
 }
 
-.setting-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #444;
-  margin-bottom: 8px;
-}
+  .setting-group label {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 8px;
+  }
 
-.setting-group select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  background: white;
-  cursor: pointer;
-  transition: border-color 0.3s;
-}
+  .setting-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 15px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    outline: none;
+  }
 
-.setting-group select:hover {
-  border-color: #667eea;
-}
+  .setting-group select:hover, .setting-group select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.13);
+    outline: 2px solid #667eea;
+  }
 
 .setting-group select:focus {
   outline: none;
@@ -108,12 +114,13 @@ header h1 {
   font-weight: normal;
 }
 
-.checkbox-group input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin-right: 10px;
-  cursor: pointer;
-}
+  .checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    cursor: pointer;
+    outline: none;
+  }
 
 .checkbox-group span {
   font-size: 14px;
@@ -174,35 +181,40 @@ header h1 {
 }
 
 .btn {
-  padding: 12px 24px;
+  padding: 14px 24px;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  outline: none;
 }
 
 .btn-primary {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   flex: 1;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.10);
 }
 
-.btn-primary:hover {
+.btn-primary:hover, .btn-primary:focus {
   background: #5568d3;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.18);
+  outline: 2px solid #667eea;
 }
 
 .btn-secondary {
   background: #f0f0f0;
   color: #333;
   flex: 1;
+  outline: none;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover, .btn-secondary:focus {
   background: #e0e0e0;
+  outline: 2px solid #667eea;
 }
 
 #openShortcuts {

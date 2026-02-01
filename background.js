@@ -1,3 +1,32 @@
+// Max number of recordings to keep in history
+const MAX_HISTORY_LENGTH = 100;
+
+/**
+ * Appends a recording entry to history in storage, enforcing max length and handling quota errors.
+ * @param {Object} entry - The recording entry to add.
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+async function appendToRecordingHistory(entry) {
+  // Use mutex to ensure atomic update
+  let resolveMutex;
+  const mutexPromise = new Promise((resolve) => { resolveMutex = resolve; });
+  const prevMutex = stateMutex;
+  stateMutex = stateMutex.then(() => mutexPromise);
+  await prevMutex;
+  try {
+    const { recordingHistory = [] } = await chrome.storage.local.get('recordingHistory');
+    const newHistory = [entry, ...recordingHistory].slice(0, MAX_HISTORY_LENGTH);
+    await chrome.storage.local.set({ recordingHistory: newHistory });
+    resolveMutex();
+    return { success: true };
+  } catch (error) {
+    resolveMutex();
+    if (error && error.message && error.message.includes('QUOTA')) {
+      return { success: false, error: 'Storage quota exceeded. Please clear some recordings.' };
+    }
+    return { success: false, error: error.message };
+  }
+}
 // State management
 /**
  * Initial state of the recording session.
@@ -43,40 +72,68 @@ async function initializeState() {
   }
 }
 
-/**
- * Retrieves the current recording state from local storage.
- * @returns {Promise<RecordingState>} The current state object.
- */
+// Simple mutex for atomic state updates
+let stateMutex = Promise.resolve();
+
+// Utility to get state from storage (atomic)
 async function getState() {
-  const { recordingState } = await chrome.storage.local.get('recordingState');
-  return recordingState || initialState;
+  await stateMutex;
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['snapRecordState'], (result) => {
+      resolve(result.snapRecordState || { ...initialState });
+    });
+  });
 }
 
-/**
- * Updates the recording state in local storage.
- * @param {Partial<RecordingState>} updates - The partial state to merge.
- * @returns {Promise<RecordingState>} The updated state object.
- */
-async function updateState(updates) {
-  const currentState = await getState();
-  const newState = { ...currentState, ...updates };
-  await chrome.storage.local.set({ recordingState: newState });
-  return newState;
+// Utility to update state in storage (atomic)
+async function updateState(newState) {
+  let resolveMutex;
+  const mutexPromise = new Promise((resolve) => { resolveMutex = resolve; });
+  const prevMutex = stateMutex;
+  stateMutex = stateMutex.then(() => mutexPromise);
+  await prevMutex;
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ snapRecordState: { ...newState } }, () => {
+      resolveMutex();
+      resolve({ ...newState });
+    });
+  });
 }
 
 // Initialize on install/startup
 chrome.runtime.onInstalled.addListener(initializeState);
 chrome.runtime.onStartup.addListener(initializeState);
 
+// Reset state if the recording tab is closed
+chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  const state = await getState();
+  if (state.isRecording && state.recordingTabId === tabId) {
+    await updateState(initialState);
+    await chrome.action.setBadgeText({ text: '' });
+  }
+});
+
 /**
  * Handles messages from other parts of the extension (popup, content scripts).
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Validate sender (must be from extension)
+  if (sender && sender.id && sender.id !== chrome.runtime.id) {
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
+  // Validate message structure
+  if (!request || typeof request !== 'object' || (!request.action && !request.type)) {
+    sendResponse({ success: false, error: 'Invalid message format' });
+    return false;
+  }
+  // Support both 'action' and legacy 'type' keys
+  const action = request.action || request.type;
   (async () => {
     try {
       const state = await getState();
 
-      switch (request.action) {
+      switch (action) {
         case 'getRecordingState': {
           const responseState = {
             ...state,
@@ -418,6 +475,7 @@ if (typeof module !== 'undefined') {
     startRecording,
     pauseRecording,
     resumeRecording,
-    stopRecording
+    stopRecording,
+    appendToRecordingHistory
   };
 }

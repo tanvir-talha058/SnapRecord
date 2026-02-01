@@ -8,34 +8,34 @@
 </head>
 <body>
   <div class="container">
-    <header class="header">
+    <header class="header" role="banner">
       <div class="logo">
-        <img src="logo.png" alt="SnapRecord Logo" width="50" height="50">
-        <h1>Recording History</h1>
+        <img src="logo.png" alt="SnapRecord logo: stylized camera" width="50" height="50" aria-hidden="true" />
+        <h1 tabindex="0">Recording History</h1>
       </div>
-      <button id="clearAllBtn" class="btn btn-danger">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button id="clearAllBtn" class="btn btn-danger" aria-label="Clear all recording history">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        Clear All
+        <span>Clear All</span>
       </button>
     </header>
 
-    <div class="stats-bar">
+    <div class="stats-bar" role="region" aria-label="Recording statistics">
       <div class="stat">
-        <span class="stat-value" id="totalRecordings">0</span>
+        <span class="stat-value" id="totalRecordings" tabindex="0">0</span>
         <span class="stat-label">Total Recordings</span>
       </div>
       <div class="stat">
-        <span class="stat-value" id="totalDuration">0:00:00</span>
+        <span class="stat-value" id="totalDuration" tabindex="0">0:00:00</span>
         <span class="stat-label">Total Duration</span>
       </div>
     </div>
 
-    <div id="historyList" class="history-list">
+    <main id="historyList" class="history-list" aria-live="polite">
       <div class="empty-state" id="emptyState">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
           <line x1="12" y1="8" x2="12" y2="12"/>
           <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -43,7 +43,7 @@
         <h3>No recordings yet</h3>
         <p>Your recording history will appear here</p>
       </div>
-    </div>
+    </main>
   </div>
   <script src="history.js"></script>
 </body>

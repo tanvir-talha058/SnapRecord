@@ -9,26 +9,29 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #333;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .container {
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
 }
 
 /* Header */
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 16px 20px;
+  padding: 20px 24px 18px 24px;
   color: white;
+  border-bottom: 1.5px solid #e9ecef;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .logo-img {
@@ -36,6 +39,7 @@ body {
   height: 52px;
   border-radius: 10px;
   object-fit: contain;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.10);
 }
 
 .logo-icon svg {
@@ -48,16 +52,18 @@ body {
 }
 
 .logo-text h1 {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.5px;
+  outline: none;
 }
 
 .subtitle {
-  font-size: 11px;
+  font-size: 13px;
   opacity: 0.85;
   margin-top: 2px;
+  color: #e0e0e0;
 }
 
 /* Status Bar */
@@ -439,7 +445,7 @@ body {
   padding: 14px 20px;
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -447,10 +453,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  outline: none;
 }
 
 .btn:active:not(:disabled) {
   transform: scale(0.98);
+  outline: 2px solid #667eea;
 }
 
 .btn:disabled {
@@ -511,6 +519,7 @@ body {
 
 /* Footer */
 .footer {
+  font-size: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;

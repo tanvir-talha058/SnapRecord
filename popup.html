@@ -9,11 +9,11 @@
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="header">
+    <div class="header" role="banner">
       <div class="logo">
-        <img src="logo.png" alt="SnapRecord Logo" class="logo-img">
+        <img src="logo.png" alt="SnapRecord logo: stylized camera" class="logo-img" aria-hidden="true" />
         <div class="logo-text">
-          <h1>SnapRecord</h1>
+          <h1 tabindex="0">SnapRecord</h1>
           <p class="subtitle">Professional Screen Recorder</p>
         </div>
       </div>
@@ -23,21 +23,21 @@
     <div id="recordingStatus" class="status-bar" role="status" aria-live="polite" aria-label="Recording status">
       <div class="status-indicator">
         <span class="status-dot" aria-hidden="true"></span>
-        <span id="statusText">Ready to record</span>
+        <span id="statusText" tabindex="0">Ready to record</span>
       </div>
-      <span id="timer" class="timer" aria-label="Recording duration">00:00:00</span>
+      <span id="timer" class="timer" aria-label="Recording duration" tabindex="0">00:00:00</span>
     </div>
 
     <!-- Tabs Navigation -->
     <div class="tabs" role="tablist" aria-label="Recording settings tabs">
-      <button class="tab-btn active" data-tab="capture" role="tab" aria-selected="true" aria-controls="tab-capture" aria-label="Capture settings tab">
+      <button class="tab-btn active" data-tab="capture" role="tab" aria-selected="true" aria-controls="tab-capture" aria-label="Capture settings tab" tabindex="0">
         <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M23 7l-7 5 7 5V7z"/>
           <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
         </svg>
         <span>Capture</span>
       </button>
-      <button class="tab-btn" data-tab="audio" role="tab" aria-selected="false" aria-controls="tab-audio" aria-label="Audio settings tab">
+      <button class="tab-btn" data-tab="audio" role="tab" aria-selected="false" aria-controls="tab-audio" aria-label="Audio settings tab" tabindex="0">
         <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M9 18V5l12-2v13"/>
           <circle cx="6" cy="18" r="3"/>
@@ -45,7 +45,7 @@
         </svg>
         <span>Audio</span>
       </button>
-      <button class="tab-btn" data-tab="output" role="tab" aria-selected="false" aria-controls="tab-output" aria-label="Output settings tab">
+      <button class="tab-btn" data-tab="output" role="tab" aria-selected="false" aria-controls="tab-output" aria-label="Output settings tab" tabindex="0">
         <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
           <polyline points="17 21 17 13 7 13 7 21"/>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Tab Contents -->
-    <div class="tab-contents">
+    <div class="tab-contents" aria-live="polite">
       <!-- Capture Tab -->
       <div class="tab-content active" id="tab-capture">
         <div class="option-group">
@@ -290,27 +290,27 @@
 
     <!-- Controls -->
     <div class="controls" role="group" aria-label="Recording controls">
-      <button id="startBtn" class="btn btn-start" aria-label="Start screen recording">
+      <button id="startBtn" class="btn btn-start" aria-label="Start screen recording" tabindex="0">
         <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
         </svg>
         <span class="btn-text">Start Recording</span>
       </button>
       <div class="control-row">
-        <button id="pauseBtn" class="btn btn-pause" disabled aria-label="Pause recording">
+        <button id="pauseBtn" class="btn btn-pause" disabled aria-label="Pause recording" tabindex="0">
           <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <rect x="6" y="4" width="4" height="16"/>
             <rect x="14" y="4" width="4" height="16"/>
           </svg>
           <span class="btn-text">Pause</span>
         </button>
-        <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;" aria-label="Resume recording">
+        <button id="resumeBtn" class="btn btn-resume" disabled style="display: none;" aria-label="Resume recording" tabindex="0">
           <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
           <span class="btn-text">Resume</span>
         </button>
-        <button id="stopBtn" class="btn btn-stop" disabled aria-label="Stop and save recording">
+        <button id="stopBtn" class="btn btn-stop" disabled aria-label="Stop and save recording" tabindex="0">
           <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <rect x="4" y="4" width="16" height="16" rx="2"/>
           </svg>
@@ -320,22 +320,22 @@
     </div>
 
     <!-- Footer -->
-    <div class="footer">
-      <a href="history.html" target="_blank" class="settings-link" aria-label="View recording history">
+    <div class="footer" role="contentinfo">
+      <a href="history.html" target="_blank" class="settings-link" aria-label="View recording history" tabindex="0">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
         </svg>
         History
       </a>
-      <a href="options.html" target="_blank" class="settings-link" aria-label="Open advanced settings">
+      <a href="options.html" target="_blank" class="settings-link" aria-label="Open advanced settings" tabindex="0">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
         Settings
       </a>
-      <span class="version">v1.1.0</span>
+      <span class="version" tabindex="0">v1.1.0</span>
     </div>
   </div>
   <script src="popup.js"></script>
