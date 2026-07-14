@@ -86,7 +86,7 @@
     height: ${size.height}px;
     ${Object.entries(position).map(([k, v]) => `${k}: ${v}`).join('; ')};
     z-index: 2147483647;
-    border: 3px solid #667eea;
+    border: 3px solid rgba(255, 255, 255, 0.85);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border-radius: ${borderRadius};
     overflow: hidden;
@@ -118,7 +118,7 @@
     width: 20px;
     height: 20px;
     cursor: nwse-resize;
-    background: linear-gradient(135deg, transparent 50%, #667eea 50%);
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.7) 50%);
     border-radius: 0 0 ${options.cameraShape === 'circle' ? '50%' : borderRadius} 0;
   `;
     overlay.appendChild(resizeHandle);
@@ -270,7 +270,7 @@
       font-size: 150px;
       font-weight: bold;
       color: white;
-      text-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
+      text-shadow: 0 0 30px rgba(255, 68, 56, 0.8);
       animation: snaprecord-countdown-pulse 1s ease-in-out infinite;
     `;
 
@@ -581,9 +581,9 @@
       transform: translateY(0);
     }
     #snaprecord-annotation-toolbar .tool-btn.active {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.4) 100%);
-      color: #a5b4fc;
-      box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
     }
     #snaprecord-annotation-toolbar .tool-btn.drawing-active {
       background: linear-gradient(135deg, rgba(34, 197, 94, 0.4) 0%, rgba(16, 185, 129, 0.4) 100%);
@@ -665,7 +665,7 @@
       -webkit-appearance: none;
       width: 14px;
       height: 14px;
-      background: #667eea;
+      background: #eaedf2;
       border-radius: 50%;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -734,7 +734,7 @@
       position: fixed;
       z-index: 2147483648;
       background: rgba(20, 20, 25, 0.95);
-      border: 2px solid #667eea;
+      border: 2px solid rgba(255, 255, 255, 0.5);
       border-radius: 8px;
       padding: 8px 12px;
       color: white;
@@ -751,20 +751,20 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
+      background: rgba(20, 20, 25, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.25);
       color: white;
       cursor: pointer;
       z-index: 2147483647;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       transition: all 0.2s ease;
     }
     #snaprecord-show-toolbar-btn:hover {
       transform: scale(1.1);
-      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+      border-color: rgba(255, 255, 255, 0.5);
     }
   `;
     document.head.appendChild(style);
@@ -999,8 +999,8 @@
     keyboardHandler = function (e) {
       if (!annotationToolbar) return;
 
-      // Ignore if typing in text input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      // Ignore if typing in a text field or editable element
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
       // Escape to hide toolbar
       if (e.key === 'Escape') {
@@ -1013,7 +1013,9 @@
         return;
       }
 
-      // Tool shortcuts (only when not typing)
+      // Tool shortcuts only apply while the toolbar is on screen
+      if (!isToolbarVisible) return;
+
       const shortcuts = {
         'p': 'pen',
         'h': 'highlighter',
@@ -1789,6 +1791,12 @@
 
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
+        if (currentStream === stream) {
+          currentStream = null;
+        }
+        if (window.__snapRecordMediaRecorder === mediaRecorder) {
+          window.__snapRecordMediaRecorder = null;
+        }
 
         // Clean up camera overlay and annotation tools
         removeCameraOverlay();
@@ -1801,10 +1809,11 @@
       // Track recording start time for duration calculation
       const recordingStartTime = Date.now();
 
-      // Save recording to history
+      // Save recording to history (background serializes writes)
       function saveRecordingToHistory(filename, options) {
         const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
         const historyEntry = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           filename,
           date: new Date().toISOString(),
           duration,
@@ -1812,13 +1821,10 @@
           format: options.format || 'webm-vp9'
         };
 
-        chrome.storage.local.get('recordingHistory', (result) => {
-          const history = result.recordingHistory || [];
-          history.push(historyEntry);
-          // Keep only last 100 recordings
-          if (history.length > 100) history.shift();
-          chrome.storage.local.set({ recordingHistory: history });
-        });
+        chrome.runtime.sendMessage({
+          action: 'saveRecordingHistory',
+          entry: historyEntry
+        }).catch(() => { });
       }
 
       // Store recorder reference for pause/resume/stop

@@ -1,54 +1,66 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - SnapRecord</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
   <div class="container">
     <header role="banner">
       <div class="header-logo">
-        <img src="logo.png" alt="SnapRecord logo: stylized camera" width="56" height="56" aria-hidden="true" />
-        <h1 tabindex="0">SnapRecord Settings</h1>
+        <img src="logo.png" alt="" width="48" height="48" aria-hidden="true" />
+        <div>
+          <p class="eyebrow">SnapRecord</p>
+          <h1>Settings</h1>
+        </div>
       </div>
-      <p class="subtitle">Configure your screen recording preferences</p>
+      <p class="subtitle">Defaults used when recording starts from the keyboard shortcut</p>
     </header>
 
     <main>
       <section class="settings-section" aria-labelledby="default-options-title">
-        <h2 id="default-options-title">Default Recording Options</h2>
+        <h2 id="default-options-title">Recording defaults</h2>
         <div class="setting-group">
-          <label for="defaultCaptureType">Default Capture Type:</label>
-          <select id="defaultCaptureType" aria-label="Default capture type">
-            <option value="tab">Current Tab</option>
-            <option value="window">Current Window</option>
-            <option value="screen">Entire Screen</option>
+          <label for="defaultCaptureType">Capture source</label>
+          <select id="defaultCaptureType">
+            <option value="tab">Browser tab</option>
+            <option value="window">Application window</option>
+            <option value="screen">Entire screen</option>
           </select>
-          <p class="description">Choose what to capture by default when starting a recording</p>
+          <p class="description">What gets captured when a recording starts</p>
         </div>
         <div class="setting-group">
-          <label for="defaultQuality">Default Quality:</label>
-          <select id="defaultQuality" aria-label="Default video quality">
+          <label for="defaultQuality">Video quality</label>
+          <select id="defaultQuality">
             <option value="720">720p (HD)</option>
             <option value="1080">1080p (Full HD)</option>
             <option value="1440">1440p (2K)</option>
           </select>
-          <p class="description">Higher quality means larger file sizes</p>
+          <p class="description">Higher quality produces larger files</p>
         </div>
         <div class="setting-group checkbox-group">
           <label for="defaultAudioEnabled">
             <input type="checkbox" id="defaultAudioEnabled" checked>
-            <span>Include system audio by default</span>
+            <span>Include system audio</span>
           </label>
         </div>
         <div class="setting-group checkbox-group">
           <label for="defaultMicEnabled">
             <input type="checkbox" id="defaultMicEnabled">
-            <span>Include microphone by default</span>
+            <span>Include microphone</span>
           </label>
         </div>
       </section>
+
       <section class="settings-section" aria-labelledby="file-settings-title">
-        <h2 id="file-settings-title">File Settings</h2>
+        <h2 id="file-settings-title">Files</h2>
         <div class="setting-group">
-          <label for="fileFormat">Output Format:</label>
-          <select id="fileFormat" aria-label="Output file format">
-            <option value="webm">WebM (Recommended)</option>
-            <option value="mp4" disabled>MP4 (Coming Soon)</option>
+          <label for="fileFormat">Output format</label>
+          <select id="fileFormat">
+            <option value="webm">WebM (recommended)</option>
+            <option value="mp4" disabled>MP4 (coming soon)</option>
           </select>
           <p class="description">WebM provides excellent quality and compression</p>
         </div>
@@ -57,45 +69,46 @@
             <input type="checkbox" id="autoSave">
             <span>Auto-save recordings (skip save dialog)</span>
           </label>
-          <p class="description">Recordings will be saved to your default downloads folder</p>
+          <p class="description">Recordings are saved straight to your downloads folder</p>
         </div>
       </section>
+
       <section class="settings-section" aria-labelledby="shortcuts-title">
-        <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
+        <h2 id="shortcuts-title">Keyboard shortcuts</h2>
         <div class="shortcuts-info">
-          <p>Configure keyboard shortcuts in Chrome's extension settings:</p>
-          <button id="openShortcuts" class="btn" aria-label="Open keyboard shortcuts settings">Open Keyboard Shortcuts</button>
+          <div class="shortcut-row">
+            <span>Start or stop recording</span>
+            <kbd>Alt</kbd><kbd>Shift</kbd><kbd>R</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Pause or resume</span>
+            <kbd>Alt</kbd><kbd>Shift</kbd><kbd>P</kbd>
+          </div>
+          <button id="openShortcuts" class="btn btn-secondary">Change shortcuts</button>
         </div>
       </section>
+
       <section class="settings-section" aria-labelledby="about-title">
         <h2 id="about-title">About</h2>
         <div class="about-info">
-          <p><strong>SnapRecord</strong> - Version 1.1.0</p>
-          <p>A lightweight screen recording extension for Chromium-based browsers</p>
-          <p class="features-title">Features:</p>
+          <p><strong>SnapRecord</strong> — Version 1.1.0</p>
+          <p>A lightweight screen recording extension for Chromium-based browsers.</p>
           <ul class="features-list">
-            <li>Record tabs, windows, or entire screen</li>
-            <li>High-quality video recording (up to 1440p)</li>
+            <li>Record tabs, windows, or the entire screen</li>
+            <li>Video quality up to 4K</li>
             <li>System audio and microphone support</li>
+            <li>Camera overlay and on-screen drawing tools</li>
             <li>Pause and resume recordings</li>
-            <li>Lightweight with no external dependencies</li>
           </ul>
         </div>
       </section>
+
       <div class="actions">
-        <button id="saveBtn" class="btn btn-primary" aria-label="Save settings">Save Settings</button>
-        <button id="resetBtn" class="btn btn-secondary" aria-label="Reset settings to defaults">Reset to Defaults</button>
-      </div>
-      <div id="statusMessage" class="status-message" aria-live="polite"></div>
-    </main>
-  </div>
-  <script src="options.js"></script>
-      <div class="actions">
-        <button id="saveBtn" class="btn btn-primary">Save Settings</button>
-        <button id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+        <button id="saveBtn" class="btn btn-primary">Save settings</button>
+        <button id="resetBtn" class="btn btn-secondary">Reset to defaults</button>
       </div>
 
-      <div id="statusMessage" class="status-message"></div>
+      <div id="statusMessage" class="status-message" aria-live="polite"></div>
     </main>
   </div>
   <script src="options.js"></script>

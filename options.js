@@ -80,13 +80,5 @@ saveBtn.addEventListener('click', saveSettings);
 resetBtn.addEventListener('click', resetSettings);
 openShortcutsBtn.addEventListener('click', openShortcuts);
 
-// Auto-save on change (optional)
-[defaultCaptureType, defaultQuality, defaultAudioEnabled, defaultMicEnabled, fileFormat, autoSave].forEach(element => {
-  element.addEventListener('change', () => {
-    // Optionally auto-save
-    // saveSettings();
-  });
-});
-
 // Load settings on page load
 document.addEventListener('DOMContentLoaded', loadSettings);

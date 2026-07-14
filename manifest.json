@@ -5,10 +5,8 @@
   "description": "A lightweight screen recording extension for Chromium-based browsers with advanced features",
   "permissions": [
     "activeTab",
-    "tabCapture",
     "storage",
-    "scripting",
-    "downloads"
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

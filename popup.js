@@ -22,11 +22,27 @@ const resolutionPreview = document.getElementById('resolutionPreview');
 const micSettings = document.getElementById('micSettings');
 const annotationsEnabled = document.getElementById('annotationsEnabled');
 
+const errorBanner = document.getElementById('errorBanner');
+
 let startTime = 0;
 let pausedTime = 0;
 let timerInterval = null;
 let _isPaused = false;
 let pollInterval = null;
+let errorTimeout = null;
+
+/**
+ * Shows an error message inside the popup instead of a blocking alert.
+ * @param {string} message - The message to display.
+ */
+function showError(message) {
+  errorBanner.textContent = message;
+  errorBanner.hidden = false;
+  if (errorTimeout) clearTimeout(errorTimeout);
+  errorTimeout = setTimeout(() => {
+    errorBanner.hidden = true;
+  }, 6000);
+}
 
 // Listen for recording state changes from background
 chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
@@ -102,7 +118,13 @@ chrome.storage.sync.get([
 ], (result) => {
   if (result.captureType) captureType.value = result.captureType;
   if (result.audioEnabled !== undefined) audioEnabled.checked = result.audioEnabled;
-  if (result.micEnabled !== undefined) micEnabled.checked = result.micEnabled;
+  if (result.micEnabled !== undefined) {
+    micEnabled.checked = result.micEnabled;
+    micSettings.style.display = result.micEnabled ? 'block' : 'none';
+    if (result.micEnabled) {
+      populateMicrophoneDevices();
+    }
+  }
   if (result.quality) quality.value = result.quality;
   if (result.cameraEnabled !== undefined) {
     cameraEnabled.checked = result.cameraEnabled;
@@ -206,11 +228,6 @@ async function populateMicrophoneDevices() {
 micDevice.addEventListener('change', () => {
   chrome.storage.sync.set({ micDeviceId: micDevice.value });
 });
-
-// Initial population if mic is enabled
-if (micEnabled.checked) {
-  populateMicrophoneDevices();
-}
 
 // Update quality preview
 /**
@@ -341,8 +358,9 @@ const ICONS = {
 startBtn.addEventListener('click', async () => {
   // Check if the current tab is a valid page for recording
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
-    alert('Recording on browser internal pages is not allowed. Please navigate to a regular webpage to start recording.');
+  const tabUrl = (tab && tab.url) || '';
+  if (!tab || !tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:') || tabUrl.startsWith('chrome-extension://')) {
+    showError('Browser pages can\'t be recorded. Open a regular webpage and try again.');
     return;
   }
 
@@ -414,13 +432,13 @@ startBtn.addEventListener('click', async () => {
         });
       }, 200);
     } else {
-      alert('Failed to start recording: ' + (response?.error || 'Unknown error'));
+      showError(response?.error || 'Recording didn\'t start. Try again.');
       startBtn.disabled = false;
       startBtn.innerHTML = ICONS.record + '<span class="btn-text">Start Recording</span>';
     }
   } catch (error) {
     console.error('Error starting recording:', error);
-    alert('Failed to start recording. Please try again.');
+    showError('Recording didn\'t start. Refresh the page and try again.');
     startBtn.disabled = false;
     startBtn.innerHTML = ICONS.record + '<span class="btn-text">Start Recording</span>';
   }
@@ -603,6 +621,8 @@ function setOptionsDisabled(disabled) {
   frameRate.disabled = disabled;
   format.disabled = disabled;
   annotationsEnabled.disabled = disabled;
+  micDevice.disabled = disabled;
+  countdownSeconds.disabled = disabled;
 
   // Disable shape radio buttons
   document.querySelectorAll('input[name="cameraShape"]').forEach(radio => {

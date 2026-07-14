@@ -13,7 +13,7 @@
       <div class="logo">
         <img src="logo.png" alt="SnapRecord logo: stylized camera" class="logo-img" aria-hidden="true" />
         <div class="logo-text">
-          <h1 tabindex="0">SnapRecord</h1>
+          <h1>SnapRecord</h1>
           <p class="subtitle">Professional Screen Recorder</p>
         </div>
       </div>
@@ -23,9 +23,9 @@
     <div id="recordingStatus" class="status-bar" role="status" aria-live="polite" aria-label="Recording status">
       <div class="status-indicator">
         <span class="status-dot" aria-hidden="true"></span>
-        <span id="statusText" tabindex="0">Ready to record</span>
+        <span id="statusText">Ready to record</span>
       </div>
-      <span id="timer" class="timer" aria-label="Recording duration" tabindex="0">00:00:00</span>
+      <span id="timer" class="timer" aria-label="Recording duration">00:00:00</span>
     </div>
 
     <!-- Tabs Navigation -->
@@ -288,6 +288,9 @@
       </div>
     </div>
 
+    <!-- Error banner -->
+    <div id="errorBanner" class="error-banner" role="alert" hidden></div>
+
     <!-- Controls -->
     <div class="controls" role="group" aria-label="Recording controls">
       <button id="startBtn" class="btn btn-start" aria-label="Start screen recording" tabindex="0">
@@ -335,7 +338,7 @@
         </svg>
         Settings
       </a>
-      <span class="version" tabindex="0">v1.1.0</span>
+      <span class="version">v1.1.0</span>
     </div>
   </div>
   <script src="popup.js"></script>

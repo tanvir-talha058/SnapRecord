@@ -78,26 +78,26 @@ let stateMutex = Promise.resolve();
 // Utility to get state from storage (atomic)
 async function getState() {
   await stateMutex;
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['snapRecordState'], (result) => {
-      resolve(result.snapRecordState || { ...initialState });
-    });
-  });
+  const result = await chrome.storage.local.get('recordingState');
+  return result.recordingState || { ...initialState };
 }
 
-// Utility to update state in storage (atomic)
-async function updateState(newState) {
+// Utility to update state in storage (atomic, merges partial updates)
+async function updateState(updates) {
   let resolveMutex;
   const mutexPromise = new Promise((resolve) => { resolveMutex = resolve; });
   const prevMutex = stateMutex;
   stateMutex = stateMutex.then(() => mutexPromise);
   await prevMutex;
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ snapRecordState: { ...newState } }, () => {
-      resolveMutex();
-      resolve({ ...newState });
-    });
-  });
+  try {
+    const result = await chrome.storage.local.get('recordingState');
+    const currentState = result.recordingState || { ...initialState };
+    const newState = { ...currentState, ...updates };
+    await chrome.storage.local.set({ recordingState: newState });
+    return newState;
+  } finally {
+    resolveMutex();
+  }
 }
 
 // Initialize on install/startup
@@ -105,7 +105,7 @@ chrome.runtime.onInstalled.addListener(initializeState);
 chrome.runtime.onStartup.addListener(initializeState);
 
 // Reset state if the recording tab is closed
-chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+chrome.tabs.onRemoved.addListener(async (tabId, _removeInfo) => {
   const state = await getState();
   if (state.isRecording && state.recordingTabId === tabId) {
     await updateState(initialState);
@@ -198,6 +198,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         }
 
+        case 'saveRecordingHistory': {
+          const historyResult = await appendToRecordingHistory(request.entry);
+          sendResponse(historyResult);
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }
@@ -230,8 +236,9 @@ async function startRecording(options) {
     }
 
     // Check if we can inject into this tab
-    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') ||
-      tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
+    const tabUrl = tab.url || '';
+    if (!tabUrl || tabUrl.startsWith('chrome://') || tabUrl.startsWith('chrome-extension://') ||
+      tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) {
       throw new Error('Cannot record browser internal pages. Please navigate to a regular webpage.');
     }
 

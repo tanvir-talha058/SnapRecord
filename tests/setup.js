@@ -19,6 +19,7 @@ global.chrome = {
         query: jest.fn(),
         sendMessage: jest.fn(),
         get: jest.fn(),
+        onRemoved: { addListener: jest.fn() },
     },
     scripting: {
         executeScript: jest.fn(),
