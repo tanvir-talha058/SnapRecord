@@ -14,6 +14,40 @@
   let cameraStream = null;
   let cameraOverlay = null;
 
+  // Tracks whether the in-flight start-recording attempt (permission
+  // prompt, countdown) has been cancelled by a Stop click, so the screen
+  // share reliably turns off even if Stop arrives before MediaRecorder exists.
+  let recordingAborted = false;
+  let activeCountdownInterval = null;
+  let activeCountdownOverlay = null;
+  let activeCountdownStyleEl = null;
+
+  /**
+   * Cancels any recording attempt that hasn't produced a MediaRecorder yet
+   * (still waiting on the capture picker, or mid-countdown) and stops the
+   * live screen-share stream immediately.
+   */
+  function cancelPendingRecording() {
+    recordingAborted = true;
+    if (activeCountdownInterval) {
+      clearInterval(activeCountdownInterval);
+      activeCountdownInterval = null;
+    }
+    if (activeCountdownOverlay) {
+      activeCountdownOverlay.remove();
+      activeCountdownOverlay = null;
+    }
+    if (activeCountdownStyleEl) {
+      activeCountdownStyleEl.remove();
+      activeCountdownStyleEl = null;
+    }
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+      currentStream = null;
+    }
+    removeCameraOverlay();
+  }
+
   // --- Storage bridge (crash-proof chunk persistence) ---
   const TIMESLICE_MS = 2000;
   const BRIDGE_READY_TIMEOUT_MS = 1500;
@@ -354,6 +388,8 @@
 
       overlay.appendChild(countdownText);
       document.body.appendChild(overlay);
+      activeCountdownOverlay = overlay;
+      activeCountdownStyleEl = style;
 
       let count = seconds;
       countdownText.textContent = count;
@@ -364,11 +400,15 @@
           countdownText.textContent = count;
         } else {
           clearInterval(interval);
+          activeCountdownInterval = null;
           overlay.remove();
+          activeCountdownOverlay = null;
           style.remove();
+          activeCountdownStyleEl = null;
           resolve();
         }
       }, 1000);
+      activeCountdownInterval = interval;
     });
   }
 
@@ -1611,8 +1651,10 @@
     if (request.action === 'stopContentRecording') {
       removeAnnotationTools();
       if (!recorder) {
-        // Already stopped, clean up camera overlay anyway
-        removeCameraOverlay();
+        // No MediaRecorder yet — recording may still be waiting on the
+        // capture picker or mid-countdown. Cancel it so the screen share
+        // actually turns off instead of silently starting later.
+        cancelPendingRecording();
         sendResponse({ success: true });
         return true;
       }
@@ -1646,6 +1688,7 @@
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
       }
+      recordingAborted = false;
 
       // Start camera overlay if enabled
       if (options.cameraEnabled) {
@@ -1708,6 +1751,16 @@
       if (!currentStream) {
         removeCameraOverlay();
         throw new Error('Failed to get display media stream');
+      }
+
+      // Stop was clicked while the capture picker was open — the stream
+      // just arrived after the user already cancelled, so tear it down
+      // immediately instead of proceeding to record.
+      if (recordingAborted) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+        removeCameraOverlay();
+        return { success: false, error: 'Recording was stopped before it started' };
       }
 
       // Add microphone audio if enabled
@@ -1832,6 +1885,15 @@
         quality: options.quality || '1080',
         format: options.format || 'webm-vp9'
       });
+
+      // Stop may have arrived while we were awaiting the storage bridge —
+      // don't start recording on a stream the user already asked to end.
+      if (recordingAborted) {
+        bridgePost({ type: 'snaprecord-discard', sessionId });
+        teardownStorageBridge();
+        removeAnnotationTools();
+        return;
+      }
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
@@ -1973,7 +2035,11 @@
 
     // Show countdown if enabled, then start recording
     if (countdownSeconds > 0) {
-      showCountdown(countdownSeconds).then(startActualRecording);
+      showCountdown(countdownSeconds).then(() => {
+        if (!recordingAborted) {
+          startActualRecording();
+        }
+      });
     } else {
       startActualRecording();
     }
