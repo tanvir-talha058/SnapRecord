@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest",
     "test:e2e": "playwright test -c tests/e2e/playwright.config.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "package": "node scripts/package-extension.js"
   },
   "jest": {
     "setupFiles": [
@@ -35,6 +36,7 @@
   "homepage": "https://github.com/tanvir-talha058/SnapRecord#readme",
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "archiver": "^8.0.0",
     "eslint": "^9.39.2",
     "globals": "^17.0.0",
     "jest": "^30.2.0",

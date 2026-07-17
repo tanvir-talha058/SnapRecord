@@ -81,23 +81,17 @@ A lightweight, feature-rich screen recording extension for Chromium-based browse
 
 ## 🚀 Installation
 
-### From Source (Developer Mode)
+Not yet on the Chrome Web Store, but installing takes under a minute:
 
-1. Clone or download this repository:
-   ```bash
-   git clone https://github.com/tanvir-talha058/SnapRecord.git
-   ```
+1. Download the latest `snaprecord-vX.Y.Z.zip` from the
+   [Releases page](https://github.com/tanvir-talha058/SnapRecord/releases)
+   and unzip it.
+2. Open `chrome://extensions/` (or `edge://extensions/`, `brave://extensions/`),
+   turn on **Developer mode**, and click **Load unpacked** on the unzipped
+   folder.
 
-2. Open your Chromium-based browser and navigate to:
-   - Chrome: `chrome://extensions/`
-   - Edge: `edge://extensions/`
-   - Brave: `brave://extensions/`
-
-3. Enable "Developer mode" using the toggle in the top-right corner
-
-4. Click "Load unpacked" and select the SnapRecord directory
-
-5. The extension icon should appear in your browser toolbar
+Full walkthrough, troubleshooting, and how to install from source instead:
+see **[INSTALL.md](INSTALL.md)**.
 
 ### From Chrome Web Store (Coming Soon)
 

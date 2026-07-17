@@ -17,20 +17,9 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { EXTENSION_FILES } = require('../../../scripts/extension-files');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
-
-const EXTENSION_FILES = [
-  'manifest.json',
-  'background.js',
-  'content.js',
-  'popup.html', 'popup.css', 'popup.js',
-  'options.html', 'options.css', 'options.js',
-  'history.html', 'history.css', 'history.js',
-  'storage-bridge.html', 'storage-bridge.js',
-  'icons/icon16.png', 'icons/icon32.png', 'icons/icon48.png', 'icons/icon128.png',
-  'lib/recording-db.js', 'lib/webm-duration-fix.js', 'lib/theme.js'
-];
 
 const GET_DISPLAY_MEDIA_ANCHOR =
   'currentStream = await navigator.mediaDevices.getDisplayMedia(displayOptions);';
