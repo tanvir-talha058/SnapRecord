@@ -21,6 +21,11 @@ build/
 # Node modules (if any in future)
 node_modules/
 
+# Playwright e2e output
+/playwright-report/
+/test-results/
+/tests/e2e/.tmp/
+
 # Python
 __pycache__/
 *.pyc
