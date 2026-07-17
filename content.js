@@ -1787,17 +1787,15 @@
             : 'video/webm';
           break;
         case 'mp4':
-          // Browser support for MP4 recording is limited, fallback to WebM
+          // Fallback kept for stale stored settings from older versions
           if (MediaRecorder.isTypeSupported('video/mp4')) {
             mimeType = 'video/mp4';
             fileExtension = 'mp4';
           } else {
-            mimeType = 'video/webm; codecs=h264';
+            mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9')
+              ? 'video/webm; codecs=vp9'
+              : 'video/webm';
           }
-          break;
-        case 'gif':
-          // GIF is not directly supported, record as WebM for now
-          mimeType = 'video/webm';
           break;
         default:
           mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9')

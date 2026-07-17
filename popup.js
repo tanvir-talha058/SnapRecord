@@ -24,6 +24,17 @@ const annotationsEnabled = document.getElementById('annotationsEnabled');
 
 const errorBanner = document.getElementById('errorBanner');
 
+// MP4 recording is only offered when the browser can actually produce it
+// (Chrome 126+). Anything else silently produced WebM before — dishonest.
+const MP4_RECORDING_SUPPORTED =
+  typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/mp4');
+if (MP4_RECORDING_SUPPORTED) {
+  const mp4Option = document.createElement('option');
+  mp4Option.value = 'mp4';
+  mp4Option.textContent = 'MP4 - Most compatible';
+  format.appendChild(mp4Option);
+}
+
 let startTime = 0;
 let pausedTime = 0;
 let timerInterval = null;
@@ -131,7 +142,9 @@ chrome.storage.sync.get([
   if (result.cameraSize) cameraSize.value = result.cameraSize;
   if (result.cameraShape) setCameraShape(result.cameraShape);
   if (result.frameRate) frameRate.value = result.frameRate;
-  if (result.format) format.value = result.format;
+  if (result.format && Array.from(format.options).some((o) => o.value === result.format)) {
+    format.value = result.format;
+  }
   if (result.countdownSeconds !== undefined) countdownSeconds.value = result.countdownSeconds;
   if (result.annotationsEnabled !== undefined) annotationsEnabled.checked = result.annotationsEnabled;
   else annotationsEnabled.checked = true; // Default to enabled
@@ -249,8 +262,7 @@ function updateQualityPreview() {
     'webm-vp9': 1,
     'webm-vp8': 1.2,
     'webm-h264': 1.1,
-    'mp4': 1.1,
-    'gif': 3
+    'mp4': 1.1
   };
 
   const res = resolutions[quality.value] || resolutions['1080'];

@@ -9,6 +9,14 @@ const resetBtn = document.getElementById('resetBtn');
 const openShortcutsBtn = document.getElementById('openShortcuts');
 const statusMessage = document.getElementById('statusMessage');
 
+// Only offer MP4 when the browser can actually record it (Chrome 126+).
+if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/mp4')) {
+  const mp4Option = document.createElement('option');
+  mp4Option.value = 'mp4';
+  mp4Option.textContent = 'MP4 — most compatible';
+  fileFormat.appendChild(mp4Option);
+}
+
 // Default settings — same storage keys the popup and background use
 const defaultSettings = {
   captureType: 'screen',
@@ -25,7 +33,9 @@ function loadSettings() {
     defaultQuality.value = result.quality;
     defaultAudioEnabled.checked = result.audioEnabled;
     defaultMicEnabled.checked = result.micEnabled;
-    fileFormat.value = result.format;
+    fileFormat.value = Array.from(fileFormat.options).some((o) => o.value === result.format)
+      ? result.format
+      : 'webm-vp9';
   });
 }
 
