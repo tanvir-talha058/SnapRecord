@@ -127,7 +127,7 @@
     makeDraggable(overlay);
 
     // Make resizable
-    makeResizable(overlay, resizeHandle, options.cameraShape);
+    makeResizable(overlay, resizeHandle);
 
     document.body.appendChild(overlay);
     cameraOverlay = overlay;
@@ -135,31 +135,55 @@
     return video;
   }
 
+  // Camera overlay drag/resize state. A single pair of document-level
+  // listeners (attached once below) drives both, instead of each
+  // createCameraOverlay() call stacking new permanent document listeners
+  // that outlive the overlay element they reference.
+  let cameraDragState = null;
+  let cameraResizeState = null;
+
   /**
    * Makes an element draggable via mouse interactions.
    * @param {HTMLElement} element - The element to make draggable.
    */
   function makeDraggable(element) {
-    let isDragging = false;
-    let startX, startY, initialX, initialY;
-
     element.addEventListener('mousedown', (e) => {
       if (e.target.style.cursor === 'nwse-resize') return;
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-
       const rect = element.getBoundingClientRect();
-      initialX = rect.left;
-      initialY = rect.top;
-
+      cameraDragState = {
+        element,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialX: rect.left,
+        initialY: rect.top
+      };
       element.style.transition = 'none';
       e.preventDefault();
     });
+  }
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+  /**
+   * Makes an element resizable via a handle.
+   * @param {HTMLElement} element - The element to resize.
+   * @param {HTMLElement} handle - The resize handle element.
+   */
+  function makeResizable(element, handle) {
+    handle.addEventListener('mousedown', (e) => {
+      cameraResizeState = {
+        element,
+        startX: e.clientX,
+        startY: e.clientY,
+        startWidth: element.offsetWidth,
+        startHeight: element.offsetHeight
+      };
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
 
+  document.addEventListener('mousemove', (e) => {
+    if (cameraDragState) {
+      const { element, startX, startY, initialX, initialY } = cameraDragState;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
@@ -174,63 +198,38 @@
       element.style.top = newY + 'px';
       element.style.right = 'auto';
       element.style.bottom = 'auto';
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-      element.style.transition = 'box-shadow 0.2s ease';
-    });
-  }
-
-  /**
-   * Makes an element resizable via a handle.
-   * @param {HTMLElement} element - The element to resize.
-   * @param {HTMLElement} handle - The resize handle element.
-   * @param {string} _shape - The shape of the element (unused in logic but kept for sig).
-   */
-  function makeResizable(element, handle, _shape) {
-    let isResizing = false;
-    let startX, startY, startWidth, startHeight;
-
-    handle.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = element.offsetWidth;
-      startHeight = element.offsetHeight;
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-
+    if (cameraResizeState) {
+      const { element, startX, startY, startWidth, startHeight } = cameraResizeState;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
       // Maintain aspect ratio for circle
       const delta = Math.max(dx, dy);
 
-      let newWidth = startWidth + delta;
-      let newHeight = startHeight + delta;
-
-      // Minimum and maximum size
-      newWidth = Math.max(80, Math.min(400, newWidth));
-      newHeight = Math.max(80, Math.min(400, newHeight));
+      let newWidth = Math.max(80, Math.min(400, startWidth + delta));
+      let newHeight = Math.max(80, Math.min(400, startHeight + delta));
 
       element.style.width = newWidth + 'px';
       element.style.height = newHeight + 'px';
-    });
+    }
+  });
 
-    document.addEventListener('mouseup', () => {
-      isResizing = false;
-    });
-  }
+  document.addEventListener('mouseup', () => {
+    if (cameraDragState) {
+      cameraDragState.element.style.transition = 'box-shadow 0.2s ease';
+      cameraDragState = null;
+    }
+    cameraResizeState = null;
+  });
 
   /**
    * Removes the camera overlay and stops the camera stream.
    */
   function removeCameraOverlay() {
+    cameraDragState = null;
+    cameraResizeState = null;
     if (cameraOverlay) {
       cameraOverlay.remove();
       cameraOverlay = null;
@@ -784,6 +783,11 @@
     setupAnnotationEvents();
   }
 
+  // Toolbar drag state, driven by the single document-level listener pair
+  // attached once below (see cameraDragState for why: per-call document
+  // listeners would otherwise leak across repeated recording sessions).
+  let toolbarDragState = null;
+
   /**
    * Makes the annotation toolbar draggable.
    */
@@ -792,9 +796,6 @@
 
     const toolbar = annotationToolbar;
     const mainToolbar = toolbar.querySelector('.toolbar-main');
-    let isDragging = false;
-    let startX, startY;
-    let toolbarX, toolbarY;
 
     mainToolbar.addEventListener('mousedown', (e) => {
       // Don't drag if clicking on a button or input
@@ -806,13 +807,7 @@
         return;
       }
 
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-
       const rect = toolbar.getBoundingClientRect();
-      toolbarX = rect.left + rect.width / 2;
-      toolbarY = rect.top;
 
       // Switch from transform-based centering to fixed positioning
       toolbar.style.left = rect.left + 'px';
@@ -820,30 +815,39 @@
       toolbar.style.transform = 'none';
       toolbar.style.bottom = 'auto';
 
+      toolbarDragState = {
+        toolbar,
+        startX: e.clientX,
+        startY: e.clientY,
+        toolbarX: rect.left + rect.width / 2,
+        toolbarY: rect.top
+      };
+
       e.preventDefault();
     });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-
-      let newX = toolbarX + dx - toolbar.offsetWidth / 2;
-      let newY = toolbarY + dy;
-
-      // Keep within viewport
-      newX = Math.max(0, Math.min(newX, window.innerWidth - toolbar.offsetWidth));
-      newY = Math.max(0, Math.min(newY, window.innerHeight - toolbar.offsetHeight));
-
-      toolbar.style.left = newX + 'px';
-      toolbar.style.top = newY + 'px';
-    });
-
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
   }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!toolbarDragState) return;
+    const { toolbar, startX, startY, toolbarX, toolbarY } = toolbarDragState;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    let newX = toolbarX + dx - toolbar.offsetWidth / 2;
+    let newY = toolbarY + dy;
+
+    // Keep within viewport
+    newX = Math.max(0, Math.min(newX, window.innerWidth - toolbar.offsetWidth));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - toolbar.offsetHeight));
+
+    toolbar.style.left = newX + 'px';
+    toolbar.style.top = newY + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    toolbarDragState = null;
+  });
 
   /**
    * Handles canvas resizing to match window size, preserving content.
@@ -1378,6 +1382,8 @@
     // Remove resize listener
     window.removeEventListener('resize', handleCanvasResize);
 
+    toolbarDragState = null;
+
     if (annotationCanvas) {
       annotationCanvas.remove();
       annotationCanvas = null;
@@ -1442,13 +1448,6 @@
     // Ping to check if content script is ready
     if (request.action === 'ping') {
       sendResponse({ success: true, ready: true });
-      return true;
-    }
-
-    if (request.action === 'showCountdown') {
-      showCountdown(request.seconds || 3)
-        .then(() => sendResponse({ success: true }))
-        .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
     }
 
@@ -1806,12 +1805,28 @@
         saveRecordingToHistory(filename, options);
       };
 
-      // Track recording start time for duration calculation
+      // Track recording start time and paused time for duration calculation
       const recordingStartTime = Date.now();
+      let totalPausedMs = 0;
+      let pauseStartedAt = 0;
+
+      mediaRecorder.addEventListener('pause', () => {
+        pauseStartedAt = Date.now();
+      });
+      mediaRecorder.addEventListener('resume', () => {
+        if (pauseStartedAt > 0) {
+          totalPausedMs += Date.now() - pauseStartedAt;
+          pauseStartedAt = 0;
+        }
+      });
 
       // Save recording to history (background serializes writes)
       function saveRecordingToHistory(filename, options) {
-        const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+        if (pauseStartedAt > 0) {
+          totalPausedMs += Date.now() - pauseStartedAt;
+          pauseStartedAt = 0;
+        }
+        const duration = Math.max(0, Math.floor((Date.now() - recordingStartTime - totalPausedMs) / 1000));
         const historyEntry = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           filename,
@@ -1834,14 +1849,9 @@
       mediaRecorder.start(1000);
 
       // Notify background that recording started
-      chrome.runtime.sendMessage({
-        action: 'recordingStarted',
-        inContentScript: true
-      }, (response) => {
+      chrome.runtime.sendMessage({ action: 'recordingStarted' }, () => {
         if (chrome.runtime.lastError) {
           console.error('Failed to notify background of recording start:', chrome.runtime.lastError);
-        } else {
-          console.log('Recording started notification sent successfully:', response);
         }
       });
     };

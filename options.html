@@ -10,13 +10,13 @@
   <div class="container">
     <header role="banner">
       <div class="header-logo">
-        <img src="logo.png" alt="" width="48" height="48" aria-hidden="true" />
+        <img src="icons/icon128.png" alt="" width="48" height="48" aria-hidden="true" />
         <div>
           <p class="eyebrow">SnapRecord</p>
           <h1>Settings</h1>
         </div>
       </div>
-      <p class="subtitle">Defaults used when recording starts from the keyboard shortcut</p>
+      <p class="subtitle">Recording defaults, shared with the popup and keyboard shortcut</p>
     </header>
 
     <main>
@@ -25,18 +25,20 @@
         <div class="setting-group">
           <label for="defaultCaptureType">Capture source</label>
           <select id="defaultCaptureType">
-            <option value="tab">Browser tab</option>
-            <option value="window">Application window</option>
             <option value="screen">Entire screen</option>
+            <option value="window">Application window</option>
+            <option value="tab">Browser tab</option>
           </select>
           <p class="description">What gets captured when a recording starts</p>
         </div>
         <div class="setting-group">
           <label for="defaultQuality">Video quality</label>
           <select id="defaultQuality">
+            <option value="480">480p (SD)</option>
             <option value="720">720p (HD)</option>
             <option value="1080">1080p (Full HD)</option>
             <option value="1440">1440p (2K)</option>
+            <option value="2160">2160p (4K)</option>
           </select>
           <p class="description">Higher quality produces larger files</p>
         </div>
@@ -59,17 +61,12 @@
         <div class="setting-group">
           <label for="fileFormat">Output format</label>
           <select id="fileFormat">
-            <option value="webm">WebM (recommended)</option>
-            <option value="mp4" disabled>MP4 (coming soon)</option>
+            <option value="webm-vp9">WebM (VP9) — best quality</option>
+            <option value="webm-vp8">WebM (VP8) — compatible</option>
+            <option value="webm-h264">WebM (H.264) — universal</option>
+            <option value="mp4">MP4 — most compatible</option>
           </select>
-          <p class="description">WebM provides excellent quality and compression</p>
-        </div>
-        <div class="setting-group checkbox-group">
-          <label for="autoSave">
-            <input type="checkbox" id="autoSave">
-            <span>Auto-save recordings (skip save dialog)</span>
-          </label>
-          <p class="description">Recordings are saved straight to your downloads folder</p>
+          <p class="description">WebM provides excellent quality and compression. MP4 falls back to WebM if your browser can't record MP4 directly.</p>
         </div>
       </section>
 

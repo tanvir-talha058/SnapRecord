@@ -4,20 +4,18 @@ const defaultQuality = document.getElementById('defaultQuality');
 const defaultAudioEnabled = document.getElementById('defaultAudioEnabled');
 const defaultMicEnabled = document.getElementById('defaultMicEnabled');
 const fileFormat = document.getElementById('fileFormat');
-const autoSave = document.getElementById('autoSave');
 const saveBtn = document.getElementById('saveBtn');
 const resetBtn = document.getElementById('resetBtn');
 const openShortcutsBtn = document.getElementById('openShortcuts');
 const statusMessage = document.getElementById('statusMessage');
 
-// Default settings
+// Default settings — same storage keys the popup and background use
 const defaultSettings = {
-  captureType: 'tab',
+  captureType: 'screen',
   quality: '1080',
   audioEnabled: true,
   micEnabled: false,
-  fileFormat: 'webm',
-  autoSave: false
+  format: 'webm-vp9'
 };
 
 // Load settings
@@ -27,8 +25,7 @@ function loadSettings() {
     defaultQuality.value = result.quality;
     defaultAudioEnabled.checked = result.audioEnabled;
     defaultMicEnabled.checked = result.micEnabled;
-    fileFormat.value = result.fileFormat;
-    autoSave.checked = result.autoSave;
+    fileFormat.value = result.format;
   });
 }
 
@@ -39,8 +36,7 @@ function saveSettings() {
     quality: defaultQuality.value,
     audioEnabled: defaultAudioEnabled.checked,
     micEnabled: defaultMicEnabled.checked,
-    fileFormat: fileFormat.value,
-    autoSave: autoSave.checked
+    format: fileFormat.value
   };
 
   chrome.storage.sync.set(settings, () => {

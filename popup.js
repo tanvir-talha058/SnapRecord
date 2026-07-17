@@ -27,7 +27,6 @@ const errorBanner = document.getElementById('errorBanner');
 let startTime = 0;
 let pausedTime = 0;
 let timerInterval = null;
-let _isPaused = false;
 let pollInterval = null;
 let errorTimeout = null;
 
@@ -47,7 +46,6 @@ function showError(message) {
 // Listen for recording state changes from background
 chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
   if (message.action === 'recordingStateChanged') {
-    console.log('Recording state changed:', message.state);
     if (message.state.isRecording && message.state.recordingStartTime > 0) {
       const now = Date.now();
       const elapsed = now - message.state.recordingStartTime - (message.state.pausedDuration || 0);
@@ -70,7 +68,6 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
       }
     }
   }
-  return true;
 });
 
 // Tab Navigation
@@ -272,9 +269,7 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
     console.warn('Error getting recording state:', chrome.runtime.lastError);
     return;
   }
-  
-  console.log('Recording state on popup open:', response);
-  
+
   if (response && response.isRecording) {
     updateUIForRecording();
 
@@ -314,7 +309,6 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
             console.warn('Polling error:', chrome.runtime.lastError);
             return;
           }
-          console.log('Polling response:', pollResponse);
           if (pollResponse && pollResponse.recordingStartTime > 0) {
             clearInterval(pollInterval);
             pollInterval = null;
@@ -345,13 +339,10 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
   }
 });
 
-// SVG Icons for buttons
+// SVG Icons for the start button states
 const ICONS = {
   record: '<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>',
-  loading: '<svg class="btn-icon spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>',
-  pause: '<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
-  play: '<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
-  stop: '<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>'
+  loading: '<svg class="btn-icon spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>'
 };
 
 // Start recording
@@ -404,7 +395,6 @@ startBtn.addEventListener('click', async () => {
             console.warn('Polling error:', chrome.runtime.lastError);
             return;
           }
-          console.log('Start button polling:', pollResponse);
           if (pollResponse && pollResponse.recordingStartTime > 0) {
             clearInterval(pollInterval);
             pollInterval = null;
@@ -542,22 +532,12 @@ function resumeTimer() {
  * Updates the timer display element with the elapsed time.
  */
 function updateTimer() {
-  if (!timerElement) {
-    console.error('Timer element not found!');
-    return;
-  }
-  if (!startTime || startTime <= 0) {
-    console.warn('Invalid startTime:', startTime);
-    return;
-  }
-  const elapsed = Date.now() - startTime;
-  const totalSeconds = Math.floor(elapsed / 1000);
+  if (!startTime || startTime <= 0) return;
+  const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  timerElement.textContent = timeString;
-  console.log('Timer updated:', timeString);
+  timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 // UI state management
@@ -590,7 +570,6 @@ function updateUIForPaused() {
   recordingStatus.classList.add('paused');
 
   pauseTimer();
-  _isPaused = true;
 }
 
 function updateUIForResumed() {
@@ -603,7 +582,6 @@ function updateUIForResumed() {
   recordingStatus.classList.remove('paused');
 
   resumeTimer();
-  _isPaused = false;
 }
 
 /**
@@ -654,6 +632,4 @@ function resetUI() {
 
   // Re-enable all options
   setOptionsDisabled(false);
-
-  _isPaused = false;
 }

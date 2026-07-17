@@ -139,7 +139,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             ...state,
             pausedDuration: state.isPaused ? state.pausedDuration + (Date.now() - state.pauseStartTime) : state.pausedDuration
           };
-          console.log('getRecordingState response:', responseState);
           sendResponse(responseState);
           break;
         }
@@ -177,8 +176,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             pausedDuration: 0,
             pauseStartTime: 0
           });
-          
-          console.log('Recording started, new state:', newState);
 
           // Broadcast to popup that recording has started
           try {
@@ -297,8 +294,8 @@ async function startRecording(options) {
       throw new Error(lastError?.message || 'Failed to communicate with content script. Please refresh the page and try again.');
     }
 
-    if (!response || !response.success) {
-      throw new Error(response?.error || 'Failed to start capture');
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to start capture');
     }
 
     // Content script will handle the recording
@@ -440,15 +437,16 @@ chrome.commands.onCommand.addListener(async (command) => {
     } else {
       // Load saved settings and start recording
       const settings = await chrome.storage.sync.get([
-        'captureType', 'audioEnabled', 'micEnabled', 'quality',
+        'captureType', 'audioEnabled', 'micEnabled', 'micDeviceId', 'quality',
         'cameraEnabled', 'cameraPosition', 'cameraSize', 'cameraShape',
-        'frameRate', 'format', 'annotationsEnabled'
+        'frameRate', 'format', 'countdownSeconds', 'annotationsEnabled'
       ]);
 
       const options = {
         captureType: settings.captureType || 'screen',
         audioEnabled: settings.audioEnabled !== false,
         micEnabled: settings.micEnabled || false,
+        micDeviceId: settings.micDeviceId || 'default',
         quality: settings.quality || '1080',
         cameraEnabled: settings.cameraEnabled || false,
         cameraPosition: settings.cameraPosition || 'bottom-right',
@@ -456,6 +454,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         cameraShape: settings.cameraShape || 'circle',
         frameRate: settings.frameRate || '30',
         format: settings.format || 'webm-vp9',
+        countdownSeconds: parseInt(settings.countdownSeconds) || 0,
         annotationsEnabled: settings.annotationsEnabled !== false
       };
 

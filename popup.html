@@ -11,7 +11,7 @@
     <!-- Header -->
     <div class="header" role="banner">
       <div class="logo">
-        <img src="logo.png" alt="SnapRecord logo: stylized camera" class="logo-img" aria-hidden="true" />
+        <img src="icons/icon128.png" alt="SnapRecord logo: stylized camera" class="logo-img" aria-hidden="true" />
         <div class="logo-text">
           <h1>SnapRecord</h1>
           <p class="subtitle">Professional Screen Recorder</p>
@@ -24,6 +24,11 @@
       <div class="status-indicator">
         <span class="status-dot" aria-hidden="true"></span>
         <span id="statusText">Ready to record</span>
+      </div>
+      <div class="vu-meter" aria-hidden="true">
+        <span class="vu-bar"></span><span class="vu-bar"></span><span class="vu-bar"></span>
+        <span class="vu-bar"></span><span class="vu-bar"></span><span class="vu-bar"></span>
+        <span class="vu-bar"></span><span class="vu-bar"></span>
       </div>
       <span id="timer" class="timer" aria-label="Recording duration">00:00:00</span>
     </div>
@@ -53,6 +58,7 @@
         </svg>
         <span>Output</span>
       </button>
+      <span class="tab-indicator" aria-hidden="true"></span>
     </div>
 
     <!-- Tab Contents -->
