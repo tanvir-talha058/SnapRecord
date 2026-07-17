@@ -6,6 +6,20 @@ const clearAllBtn = document.getElementById('clearAllBtn');
 const totalRecordings = document.getElementById('totalRecordings');
 const totalDuration = document.getElementById('totalDuration');
 
+// Finalized sessions that still have their video blob cached locally,
+// keyed by session id. Loaded once per render.
+let previewSessions = new Map();
+
+async function loadPreviewSessions() {
+  try {
+    const sessions = await SnapRecordDB.getFinalizedSessions();
+    previewSessions = new Map(sessions.filter((s) => s.blob).map((s) => [s.id, s]));
+  } catch (error) {
+    console.warn('Preview sessions unavailable:', error);
+    previewSessions = new Map();
+  }
+}
+
 /**
  * Returns the stored history sorted newest first.
  * The same ordering is used for rendering and deletion so indexes always match.
@@ -19,6 +33,7 @@ async function getSortedHistory() {
 
 // Load and display history
 async function loadHistory() {
+  await loadPreviewSessions();
   const history = await getSortedHistory();
 
   historyList.innerHTML = '';
@@ -79,6 +94,58 @@ function createHistoryItem(recording, index) {
   div.querySelector('.meta-quality').textContent = `${recording.quality || '1080'}p`;
 
   div.querySelector('.delete').addEventListener('click', () => deleteRecording(index));
+
+  const session = recording.sessionId ? previewSessions.get(recording.sessionId) : null;
+  if (session) {
+    const actions = div.querySelector('.history-actions');
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'btn-icon';
+    downloadBtn.title = 'Download again';
+    downloadBtn.setAttribute('aria-label', 'Download this recording again');
+    downloadBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    downloadBtn.addEventListener('click', () => {
+      const url = URL.createObjectURL(session.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = session.filename || recording.filename || 'recording.webm';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, 1000);
+    });
+
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'btn-icon';
+    previewBtn.title = 'Preview';
+    previewBtn.setAttribute('aria-label', 'Preview this recording');
+    previewBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+
+    let previewRow = null;
+    let previewUrl = null;
+    previewBtn.addEventListener('click', () => {
+      if (previewRow) {
+        previewRow.remove();
+        previewRow = null;
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        return;
+      }
+      previewUrl = URL.createObjectURL(session.blob);
+      previewRow = document.createElement('div');
+      previewRow.className = 'preview-row';
+      const video = document.createElement('video');
+      video.controls = true;
+      video.src = previewUrl;
+      previewRow.appendChild(video);
+      div.appendChild(previewRow);
+    });
+
+    actions.prepend(downloadBtn);
+    actions.prepend(previewBtn);
+  }
 
   return div;
 }

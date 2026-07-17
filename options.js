@@ -4,6 +4,7 @@ const defaultQuality = document.getElementById('defaultQuality');
 const defaultAudioEnabled = document.getElementById('defaultAudioEnabled');
 const defaultMicEnabled = document.getElementById('defaultMicEnabled');
 const fileFormat = document.getElementById('fileFormat');
+const previewCount = document.getElementById('previewCount');
 const saveBtn = document.getElementById('saveBtn');
 const resetBtn = document.getElementById('resetBtn');
 const openShortcutsBtn = document.getElementById('openShortcuts');
@@ -23,7 +24,8 @@ const defaultSettings = {
   quality: '1080',
   audioEnabled: true,
   micEnabled: false,
-  format: 'webm-vp9'
+  format: 'webm-vp9',
+  previewCount: '3'
 };
 
 // Load settings
@@ -36,6 +38,7 @@ function loadSettings() {
     fileFormat.value = Array.from(fileFormat.options).some((o) => o.value === result.format)
       ? result.format
       : 'webm-vp9';
+    previewCount.value = result.previewCount;
   });
 }
 
@@ -46,7 +49,8 @@ function saveSettings() {
     quality: defaultQuality.value,
     audioEnabled: defaultAudioEnabled.checked,
     micEnabled: defaultMicEnabled.checked,
-    format: fileFormat.value
+    format: fileFormat.value,
+    previewCount: previewCount.value
   };
 
   chrome.storage.sync.set(settings, () => {

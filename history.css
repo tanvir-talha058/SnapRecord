@@ -309,3 +309,19 @@ body {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Inline recording preview */
+.history-item {
+  flex-wrap: wrap;
+}
+
+.preview-row {
+  flex-basis: 100%;
+  margin-top: 12px;
+}
+
+.preview-row video {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+}
