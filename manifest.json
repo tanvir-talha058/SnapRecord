@@ -1,15 +1,12 @@
 {
   "manifest_version": 3,
   "name": "SnapRecord - Screen Recorder",
-  "version": "1.1.0",
-  "description": "A lightweight screen recording extension for Chromium-based browsers with advanced features",
+  "version": "1.2.0",
+  "description": "Privacy-first screen recorder. 100% local — no account, no uploads, no telemetry. Crash-proof recordings that never lose footage.",
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
-  ],
-  "host_permissions": [
-    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"

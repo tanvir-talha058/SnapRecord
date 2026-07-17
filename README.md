@@ -4,6 +4,19 @@ A lightweight, feature-rich screen recording extension for Chromium-based browse
 
 ## ✨ Features
 
+- 🛟 **Crash-Proof Recordings**
+  - Chunks persist locally as you record
+  - Recover footage after a tab crash, navigation, or browser restart
+  - Never lose a recording again
+
+- 🔒 **100% Private**
+  - No account, no uploads, no telemetry
+  - Recordings never leave your device
+
+- ⏩ **Seekable Videos**
+  - WebM duration is fixed automatically
+  - Files scrub correctly in every player
+
 - 🎥 **Multiple Capture Modes**
   - Record current browser tab
   - Record current window
@@ -55,6 +68,16 @@ A lightweight, feature-rich screen recording extension for Chromium-based browse
   - No external dependencies
   - Minimal resource usage
   - Native browser APIs only
+
+## 🔒 Privacy
+
+**Your recordings never leave this device.**
+
+- No account or sign-in — ever
+- No uploads: videos download straight to your computer
+- No analytics, tracking, or telemetry of any kind
+- Minimal permissions: only what recording strictly requires
+- Crash-recovery data is stored locally in your browser and auto-deleted
 
 ## 🚀 Installation
 
@@ -128,16 +151,13 @@ SnapRecord is built using Chrome Extension Manifest V3 with the following compon
 
 ## 🔒 Permissions
 
-SnapRecord requires the following permissions:
+SnapRecord requires only three permissions — far fewer than comparable recorders:
 
-- **activeTab**: Access the current tab for tab recording
-- **tabCapture**: Capture tab audio and video
-- **storage**: Save user preferences and recording history
-- **scripting**: Inject content script for recording
-- **downloads**: Save recorded videos
-- **host_permissions**: Required for complete tab capture functionality
+- **activeTab**: Access the current tab when you start a recording
+- **storage**: Save your preferences and recording history
+- **scripting**: Inject the recording script into the page
 
-All permissions are used exclusively for screen recording functionality and no data is collected or transmitted.
+No host permissions, no downloads permission, no tab-capture permission. All permissions are used exclusively for screen recording functionality and no data is collected or transmitted.
 
 ## 🛠️ Technical Details
 
@@ -182,6 +202,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [ ] Test all quality settings
 - [ ] Verify downloads work correctly
 - [ ] Test settings persistence
+- [ ] Kill the tab mid-recording and verify "Recover" in the popup works
+- [ ] Verify the downloaded video is seekable with a correct duration
 
 ## 📝 License
 
@@ -192,7 +214,7 @@ MIT License - feel free to use this project for any purpose.
 - Screen/window capture requires user permission each time (browser security requirement)
 - Some websites may block tab capture due to DRM protection
 - Maximum recording length depends on available system memory
-- WebM format may require conversion for some video editors (VLC plays it natively)
+- On pages with very strict security policies the crash-recovery mirror may be unavailable; recording still works normally there
 
 ## 🔮 Roadmap
 
