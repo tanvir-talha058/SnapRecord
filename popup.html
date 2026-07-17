@@ -297,6 +297,18 @@
     <!-- Error banner -->
     <div id="errorBanner" class="error-banner" role="alert" hidden></div>
 
+    <!-- Crash recovery banner -->
+    <div id="recoveryBanner" class="recovery-banner" role="alert" hidden>
+      <div class="recovery-text">
+        <strong>Unsaved recording found</strong>
+        <span id="recoveryDetail"></span>
+      </div>
+      <div class="recovery-actions">
+        <button id="recoverBtn" class="btn-recover" aria-label="Recover unsaved recording">Recover</button>
+        <button id="discardRecoveryBtn" class="btn-discard" aria-label="Discard unsaved recording">Discard</button>
+      </div>
+    </div>
+
     <!-- Controls -->
     <div class="controls" role="group" aria-label="Recording controls">
       <button id="startBtn" class="btn btn-start" aria-label="Start screen recording" tabindex="0">
@@ -347,6 +359,8 @@
       <span class="version">v1.1.0</span>
     </div>
   </div>
+  <script src="lib/recording-db.js"></script>
+  <script src="lib/webm-duration-fix.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

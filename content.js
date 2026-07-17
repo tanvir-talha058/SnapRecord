@@ -1842,6 +1842,20 @@
 
       const recordedChunks = [];
 
+      // Navigation guard: warn before leaving and flush a final chunk so the
+      // recovery flow loses at most the last timeslice.
+      const beforeUnloadHandler = (event) => {
+        event.preventDefault();
+        event.returnValue = '';
+      };
+      const pageHideHandler = () => {
+        if (mediaRecorder.state === 'recording') {
+          try { mediaRecorder.requestData(); } catch (_e) { /* recorder already gone */ }
+        }
+      };
+      window.addEventListener('beforeunload', beforeUnloadHandler);
+      window.addEventListener('pagehide', pageHideHandler);
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           recordedChunks.push(event.data);
@@ -1865,6 +1879,8 @@
       });
 
       mediaRecorder.onstop = async () => {
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        window.removeEventListener('pagehide', pageHideHandler);
         if (pauseStartedAt > 0) {
           totalPausedMs += Date.now() - pauseStartedAt;
           pauseStartedAt = 0;

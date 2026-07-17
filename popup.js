@@ -336,6 +336,8 @@ chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
         });
       }, 200);
     }
+  } else {
+    checkForRecoverableRecordings();
   }
 });
 
@@ -633,3 +635,77 @@ function resetUI() {
   // Re-enable all options
   setOptionsDisabled(false);
 }
+
+// --- Crash recovery -------------------------------------------------------
+const recoveryBanner = document.getElementById('recoveryBanner');
+const recoveryDetail = document.getElementById('recoveryDetail');
+const recoverBtn = document.getElementById('recoverBtn');
+const discardRecoveryBtn = document.getElementById('discardRecoveryBtn');
+let recoverySession = null;
+
+/**
+ * Shows the recovery banner when an interrupted recording session is found
+ * in extension IndexedDB (tab crash, navigation, browser restart).
+ */
+async function checkForRecoverableRecordings() {
+  try {
+    await SnapRecordDB.purgeOldSessions(7 * 24 * 60 * 60 * 1000);
+    const sessions = await SnapRecordDB.getRecordingSessions();
+    const now = Date.now();
+    const orphans = sessions
+      .filter((s) => SnapRecordDB.isOrphan(s, now))
+      .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+    if (orphans.length === 0) return;
+
+    recoverySession = orphans[0];
+    const capturedMs = Math.max(0, (recoverySession.lastChunkAt || recoverySession.startedAt) - recoverySession.startedAt);
+    recoveryDetail.textContent =
+      `${new Date(recoverySession.startedAt).toLocaleString()} - ~${Math.round(capturedMs / 1000)}s captured`;
+    recoveryBanner.hidden = false;
+  } catch (error) {
+    console.warn('Recovery check failed:', error);
+  }
+}
+
+recoverBtn.addEventListener('click', async () => {
+  if (!recoverySession) return;
+  recoverBtn.disabled = true;
+  try {
+    const chunks = await SnapRecordDB.getChunks(recoverySession.id);
+    if (chunks.length === 0) throw new Error('no recoverable data found');
+
+    const type = recoverySession.mimeType || 'video/webm';
+    let blob = new Blob(chunks, { type });
+    const durationMs = Math.max(0, (recoverySession.lastChunkAt || Date.now()) - recoverySession.startedAt);
+    if (type.startsWith('video/webm')) {
+      blob = await SnapRecordWebM.fixBlobDuration(blob, durationMs);
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snaprecord-recovered-${new Date(recoverySession.startedAt).toISOString().replace(/[:.]/g, '-')}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    await SnapRecordDB.deleteSession(recoverySession.id);
+    recoverySession = null;
+    recoveryBanner.hidden = true;
+  } catch (error) {
+    showError(`Recovery failed: ${error.message}`);
+    recoverBtn.disabled = false;
+  }
+});
+
+discardRecoveryBtn.addEventListener('click', async () => {
+  if (!recoverySession) return;
+  try {
+    await SnapRecordDB.deleteSession(recoverySession.id);
+  } catch (_e) { /* nothing to keep anyway */ }
+  recoverySession = null;
+  recoveryBanner.hidden = true;
+});

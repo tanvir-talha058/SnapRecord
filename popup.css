@@ -814,3 +814,68 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Crash recovery banner */
+.recovery-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--amber-soft);
+  border: 1px solid var(--amber);
+}
+
+.recovery-banner[hidden] {
+  display: none;
+}
+
+.recovery-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.recovery-text strong {
+  color: var(--amber);
+}
+
+.recovery-text span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.recovery-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-recover,
+.btn-discard {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+
+.btn-recover {
+  background: var(--amber);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.btn-recover:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-discard {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
