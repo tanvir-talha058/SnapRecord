@@ -16,7 +16,8 @@ module.exports = [
                 CaptureController: 'readonly',
                 MediaRecorder: 'readonly',
                 SnapRecordDB: 'readonly',
-                SnapRecordWebM: 'readonly'
+                SnapRecordWebM: 'readonly',
+                SnapRecordTheme: 'readonly'
             }
         },
         rules: {

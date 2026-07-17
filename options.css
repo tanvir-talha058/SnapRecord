@@ -12,6 +12,8 @@
   --rec: #ff4438;
   --green: #2fbf71;
   --green-soft: rgba(47, 191, 113, 0.14);
+  --focus-ring: rgba(234, 237, 242, 0.7);
+  --error-text: #ff8a80;
   --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -35,7 +37,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(234, 237, 242, 0.7);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -308,7 +310,7 @@ kbd {
 }
 
 .btn-primary:hover {
-  background: #fff;
+  filter: brightness(1.12);
   box-shadow: 0 4px 16px rgba(234, 237, 242, 0.18);
   transform: translateY(-1px);
 }
@@ -351,7 +353,7 @@ kbd {
 
 .status-message.error {
   background: rgba(255, 68, 56, 0.14);
-  color: #ff8a80;
+  color: var(--error-text);
   border: 1px solid rgba(255, 68, 56, 0.35);
   display: block;
   animation: messageIn 0.35s var(--ease-spring);
@@ -373,4 +375,22 @@ kbd {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+/* Light theme — same deck, daylight shift */
+:root[data-theme="light"] {
+  --bg: #f2f3f6;
+  --panel: #ffffff;
+  --raised: #e9ebef;
+  --line: #d3d8e0;
+  --line-soft: #e1e5eb;
+  --text: #171b22;
+  --muted: #5b6473;
+  --faint: #98a1b0;
+  --rec: #d92d20;
+  --rec-soft: rgba(217, 45, 32, 0.10);
+  --green: #1a7f4b;
+  --green-soft: rgba(26, 127, 75, 0.12);
+  --focus-ring: rgba(23, 27, 34, 0.55);
+  --error-text: #b3261e;
 }
