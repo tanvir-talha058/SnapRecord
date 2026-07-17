@@ -14,7 +14,9 @@ module.exports = [
                 ...globals.jest,
                 chrome: 'readonly',
                 CaptureController: 'readonly',
-                MediaRecorder: 'readonly'
+                MediaRecorder: 'readonly',
+                SnapRecordDB: 'readonly',
+                SnapRecordWebM: 'readonly'
             }
         },
         rules: {

@@ -28,6 +28,12 @@
     "128": "icons/icon128.png"
   },
   "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["storage-bridge.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "commands": {
     "toggle-recording": {
       "suggested_key": {
