@@ -258,7 +258,7 @@ async function startRecording(options) {
       try {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['content.js']
+          files: ['lib/webm-duration-fix.js', 'content.js']
         });
         // Wait for script to initialize
         await new Promise(resolve => setTimeout(resolve, 200));

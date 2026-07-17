@@ -14,6 +14,75 @@
   let cameraStream = null;
   let cameraOverlay = null;
 
+  // --- Storage bridge (crash-proof chunk persistence) ---
+  const TIMESLICE_MS = 2000;
+  const BRIDGE_READY_TIMEOUT_MS = 1500;
+  let bridgeFrame = null;
+  let bridgeReady = false;
+
+  /**
+   * Embeds the hidden extension iframe that mirrors chunks into
+   * extension-origin IndexedDB. Resolves true when the bridge is ready,
+   * false when unavailable (page CSP, IndexedDB failure, timeout) — in
+   * which case recording proceeds memory-only exactly as before.
+   * @param {Object} session - Session record to create in IndexedDB.
+   * @returns {Promise<boolean>} Whether the bridge is available.
+   */
+  function setupStorageBridge(session) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok) => {
+        if (!settled) {
+          settled = true;
+          resolve(ok);
+        }
+      };
+      try {
+        bridgeFrame = document.createElement('iframe');
+        bridgeFrame.src = chrome.runtime.getURL('storage-bridge.html');
+        bridgeFrame.setAttribute('aria-hidden', 'true');
+        bridgeFrame.style.cssText = 'position:fixed;width:0;height:0;border:0;visibility:hidden;pointer-events:none;';
+        const onMessage = (event) => {
+          if (bridgeFrame && event.source === bridgeFrame.contentWindow &&
+            event.data && event.data.type === 'snaprecord-bridge-ready') {
+            window.removeEventListener('message', onMessage);
+            bridgeReady = true;
+            bridgePost({ type: 'snaprecord-create-session', session });
+            finish(true);
+          }
+        };
+        window.addEventListener('message', onMessage);
+        (document.body || document.documentElement).appendChild(bridgeFrame);
+        setTimeout(() => {
+          window.removeEventListener('message', onMessage);
+          finish(bridgeReady);
+        }, BRIDGE_READY_TIMEOUT_MS);
+      } catch (_e) {
+        finish(false);
+      }
+    });
+  }
+
+  function bridgePost(message) {
+    if (bridgeReady && bridgeFrame && bridgeFrame.contentWindow) {
+      try {
+        bridgeFrame.contentWindow.postMessage(message, chrome.runtime.getURL('').replace(/\/$/, ''));
+      } catch (_e) {
+        // Page tore the frame down; recording continues memory-only.
+      }
+    }
+  }
+
+  function teardownStorageBridge() {
+    const frame = bridgeFrame;
+    bridgeFrame = null;
+    bridgeReady = false;
+    if (frame) {
+      // Give the final finalize/discard message time to be processed.
+      setTimeout(() => frame.remove(), 3000);
+    }
+  }
+
   // Utility function for generating filenames
   /**
    * Generates a timestamped filename for the recording.
@@ -1691,7 +1760,7 @@
     // Show countdown after user has selected what to capture
     const countdownSeconds = parseInt(options.countdownSeconds) || 0;
 
-    const startActualRecording = () => {
+    const startActualRecording = async () => {
       // Create annotation tools if enabled
       if (options.annotationsEnabled !== false) {
         createAnnotationTools();
@@ -1755,6 +1824,17 @@
       const fpsMultiplier = frameRateMultipliers[options.frameRate] || 1;
       const videoBitsPerSecond = Math.round(baseBitrate * fpsMultiplier);
 
+      const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      let chunkSeq = 0;
+      await setupStorageBridge({
+        id: sessionId,
+        startedAt: Date.now(),
+        state: 'recording',
+        mimeType,
+        quality: options.quality || '1080',
+        format: options.format || 'webm-vp9'
+      });
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
         videoBitsPerSecond
@@ -1765,11 +1845,36 @@
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           recordedChunks.push(event.data);
+          bridgePost({ type: 'snaprecord-chunk', sessionId, seq: chunkSeq++, blob: event.data });
         }
       };
 
+      // Track recording start time and paused time for duration calculation
+      const recordingStartTime = Date.now();
+      let totalPausedMs = 0;
+      let pauseStartedAt = 0;
+
+      mediaRecorder.addEventListener('pause', () => {
+        pauseStartedAt = Date.now();
+      });
+      mediaRecorder.addEventListener('resume', () => {
+        if (pauseStartedAt > 0) {
+          totalPausedMs += Date.now() - pauseStartedAt;
+          pauseStartedAt = 0;
+        }
+      });
+
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: mimeType });
+        if (pauseStartedAt > 0) {
+          totalPausedMs += Date.now() - pauseStartedAt;
+          pauseStartedAt = 0;
+        }
+        const recordedDurationMs = Math.max(0, Date.now() - recordingStartTime - totalPausedMs);
+
+        let blob = new Blob(recordedChunks, { type: mimeType });
+        if (mimeType.startsWith('video/webm') && typeof SnapRecordWebM !== 'undefined') {
+          blob = await SnapRecordWebM.fixBlobDuration(blob, recordedDurationMs);
+        }
 
         // Create download link
         const url = URL.createObjectURL(blob);
@@ -1788,6 +1893,16 @@
           URL.revokeObjectURL(url);
         }, 100);
 
+        // Mark the persisted session as safely delivered
+        bridgePost({
+          type: 'snaprecord-finalize',
+          sessionId,
+          blob,
+          filename,
+          durationMs: recordedDurationMs
+        });
+        teardownStorageBridge();
+
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         if (currentStream === stream) {
@@ -1805,21 +1920,6 @@
         saveRecordingToHistory(filename, options);
       };
 
-      // Track recording start time and paused time for duration calculation
-      const recordingStartTime = Date.now();
-      let totalPausedMs = 0;
-      let pauseStartedAt = 0;
-
-      mediaRecorder.addEventListener('pause', () => {
-        pauseStartedAt = Date.now();
-      });
-      mediaRecorder.addEventListener('resume', () => {
-        if (pauseStartedAt > 0) {
-          totalPausedMs += Date.now() - pauseStartedAt;
-          pauseStartedAt = 0;
-        }
-      });
-
       // Save recording to history (background serializes writes)
       function saveRecordingToHistory(filename, options) {
         if (pauseStartedAt > 0) {
@@ -1829,6 +1929,7 @@
         const duration = Math.max(0, Math.floor((Date.now() - recordingStartTime - totalPausedMs) / 1000));
         const historyEntry = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          sessionId,
           filename,
           date: new Date().toISOString(),
           duration,
@@ -1846,7 +1947,7 @@
       window.__snapRecordMediaRecorder = mediaRecorder;
 
       // Start recording
-      mediaRecorder.start(1000);
+      mediaRecorder.start(TIMESLICE_MS);
 
       // Notify background that recording started
       chrome.runtime.sendMessage({ action: 'recordingStarted' }, () => {
