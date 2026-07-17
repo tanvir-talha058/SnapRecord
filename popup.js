@@ -744,4 +744,4 @@ themeToggle.addEventListener('click', async () => {
 // The stored theme is applied asynchronously by lib/theme.js; render the
 // icon once that initial read has landed, and again right away as a default.
 renderThemeToggle();
-chrome.storage.sync.get({ theme: 'dark' }, () => renderThemeToggle());
+chrome.storage.sync.get({ theme: 'light' }, () => renderThemeToggle());

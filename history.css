@@ -1,18 +1,18 @@
 /* SnapRecord history — recording-deck theme (shared tokens with popup.css) */
 
 :root {
-  --bg: #0d0f13;
-  --panel: #14171c;
-  --raised: #1b2027;
-  --line: #272d37;
-  --line-soft: #1f242d;
-  --text: #eaedf2;
-  --muted: #8c95a5;
-  --faint: #5d6675;
-  --rec: #ff4438;
-  --rec-soft: rgba(255, 68, 56, 0.14);
-  --focus-ring: rgba(234, 237, 242, 0.7);
-  --error-text: #ff8a80;
+  --bg: #f2f3f6;
+  --panel: #ffffff;
+  --raised: #e9ebef;
+  --line: #d3d8e0;
+  --line-soft: #e1e5eb;
+  --text: #171b22;
+  --muted: #5b6473;
+  --faint: #98a1b0;
+  --rec: #d92d20;
+  --rec-soft: rgba(217, 45, 32, 0.10);
+  --focus-ring: rgba(23, 27, 34, 0.55);
+  --error-text: #b3261e;
   --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -104,12 +104,12 @@ body {
 
 .btn-danger {
   background: var(--rec-soft);
-  border-color: rgba(255, 68, 56, 0.35);
+  border-color: color-mix(in srgb, var(--rec) 35%, transparent);
   color: var(--error-text);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(255, 68, 56, 0.24);
+  background: color-mix(in srgb, var(--rec) 20%, transparent);
   transform: translateY(-1px);
 }
 
@@ -191,7 +191,7 @@ body {
 .history-item:hover {
   border-color: var(--line);
   transform: translateX(3px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .history-icon {
@@ -267,7 +267,7 @@ body {
 
 .btn-icon.delete:hover {
   background: var(--rec-soft);
-  border-color: rgba(255, 68, 56, 0.4);
+  border-color: color-mix(in srgb, var(--rec) 40%, transparent);
   color: var(--error-text);
 }
 
@@ -328,20 +328,24 @@ body {
   background: #000;
 }
 
-/* Light theme — same deck, daylight shift */
-:root[data-theme="light"] {
-  --bg: #f2f3f6;
-  --panel: #ffffff;
-  --raised: #e9ebef;
-  --line: #d3d8e0;
-  --line-soft: #e1e5eb;
-  --text: #171b22;
-  --muted: #5b6473;
-  --faint: #98a1b0;
-  --rec: #d92d20;
-  --rec-soft: rgba(217, 45, 32, 0.10);
-  --green: #1a7f4b;
-  --green-soft: rgba(26, 127, 75, 0.12);
-  --focus-ring: rgba(23, 27, 34, 0.55);
-  --error-text: #b3261e;
+/* Dark theme — the original charcoal recording deck */
+:root[data-theme="dark"] {
+  --bg: #0d0f13;
+  --panel: #14171c;
+  --raised: #1b2027;
+  --line: #272d37;
+  --line-soft: #1f242d;
+  --text: #eaedf2;
+  --muted: #8c95a5;
+  --faint: #5d6675;
+  --rec: #ff4438;
+  --rec-soft: rgba(255, 68, 56, 0.14);
+  --focus-ring: rgba(234, 237, 242, 0.7);
+  --error-text: #ff8a80;
+}
+
+/* Theme cross-fade */
+body,
+.container {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

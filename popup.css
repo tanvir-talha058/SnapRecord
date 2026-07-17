@@ -1,24 +1,25 @@
 /* SnapRecord — "recording deck" theme
-   Palette: charcoal case surfaces; red is reserved for REC,
-   amber for pause, green for armed/on states. Timecode is monospace. */
+   Palette: studio-daylight surfaces by default; red is reserved for REC,
+   amber for pause, green for armed/on states. Timecode is monospace.
+   Dark mode restores the original charcoal deck via [data-theme="dark"]. */
 
 :root {
-  --bg: #0d0f13;
-  --panel: #14171c;
-  --raised: #1b2027;
-  --line: #272d37;
-  --line-soft: #1f242d;
-  --text: #eaedf2;
-  --muted: #8c95a5;
-  --faint: #5d6675;
-  --rec: #ff4438;
-  --rec-soft: rgba(255, 68, 56, 0.14);
-  --amber: #f5a524;
-  --amber-soft: rgba(245, 165, 36, 0.14);
-  --green: #2fbf71;
-  --green-soft: rgba(47, 191, 113, 0.14);
-  --focus-ring: rgba(234, 237, 242, 0.7);
-  --error-text: #ff8a80;
+  --bg: #f2f3f6;
+  --panel: #ffffff;
+  --raised: #e9ebef;
+  --line: #d3d8e0;
+  --line-soft: #e1e5eb;
+  --text: #171b22;
+  --muted: #5b6473;
+  --faint: #98a1b0;
+  --rec: #d92d20;
+  --rec-soft: rgba(217, 45, 32, 0.10);
+  --amber: #9a6700;
+  --amber-soft: rgba(154, 103, 0, 0.10);
+  --green: #1a7f4b;
+  --green-soft: rgba(26, 127, 75, 0.12);
+  --focus-ring: rgba(23, 27, 34, 0.55);
+  --error-text: #b3261e;
   --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -74,7 +75,7 @@ body {
   background: var(--raised);
   color: var(--muted);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.3s ease, transform 0.2s var(--ease-spring);
 }
 
 .theme-toggle:hover {
@@ -122,6 +123,10 @@ body {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--line-soft);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .status-bar {
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.4);
 }
 
@@ -138,7 +143,7 @@ body {
 
 .status-bar.recording::before {
   background: var(--rec);
-  box-shadow: 0 0 8px rgba(255, 68, 56, 0.6);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--rec) 60%, transparent);
 }
 
 .status-bar.paused::before {
@@ -171,7 +176,7 @@ body {
 
 .status-bar.recording .status-dot {
   background: var(--rec);
-  box-shadow: 0 0 8px rgba(255, 68, 56, 0.7);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--rec) 70%, transparent);
 }
 
 .status-bar.recording .status-dot::after {
@@ -397,13 +402,13 @@ body {
 .option-group select:hover {
   border-color: var(--faint);
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 
 .option-group select:focus {
   outline: none;
   border-color: var(--muted);
-  box-shadow: 0 0 0 3px rgba(234, 237, 242, 0.08);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--muted) 18%, transparent);
 }
 
 .option-group select:disabled {
@@ -638,7 +643,7 @@ body {
   margin: 0 20px 12px;
   padding: 10px 12px;
   background: var(--rec-soft);
-  border: 1px solid rgba(255, 68, 56, 0.35);
+  border: 1px solid color-mix(in srgb, var(--rec) 35%, transparent);
   border-radius: 8px;
   color: var(--error-text);
   font-size: 12.5px;
@@ -713,14 +718,14 @@ body {
 }
 
 .btn-start {
-  background: var(--rec);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rec) 92%, #fff), var(--rec));
   color: #fff;
-  box-shadow: 0 2px 12px rgba(255, 68, 56, 0.35);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--rec) 38%, transparent);
 }
 
 .btn-start:hover:not(:disabled) {
-  background: #ff5a4f;
-  box-shadow: 0 4px 20px rgba(255, 68, 56, 0.55);
+  filter: brightness(1.06) saturate(1.05);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--rec) 55%, transparent);
   transform: translateY(-1px);
 }
 
@@ -733,22 +738,22 @@ body {
 
 .btn-pause {
   background: var(--amber-soft);
-  border-color: rgba(245, 165, 36, 0.35);
+  border-color: color-mix(in srgb, var(--amber) 35%, transparent);
   color: var(--amber);
 }
 
 .btn-pause:hover:not(:disabled) {
-  background: rgba(245, 165, 36, 0.22);
+  background: color-mix(in srgb, var(--amber) 20%, transparent);
 }
 
 .btn-resume {
   background: var(--green-soft);
-  border-color: rgba(47, 191, 113, 0.35);
+  border-color: color-mix(in srgb, var(--green) 35%, transparent);
   color: var(--green);
 }
 
 .btn-resume:hover:not(:disabled) {
-  background: rgba(47, 191, 113, 0.22);
+  background: color-mix(in srgb, var(--green) 20%, transparent);
 }
 
 .btn-stop {
@@ -758,7 +763,7 @@ body {
 }
 
 .btn-stop:hover:not(:disabled) {
-  border-color: rgba(255, 68, 56, 0.5);
+  border-color: color-mix(in srgb, var(--rec) 50%, transparent);
   color: var(--rec);
 }
 
@@ -914,27 +919,54 @@ body {
   white-space: nowrap;
 }
 
-/* Light theme — same deck, daylight shift */
-:root[data-theme="light"] {
-  --bg: #f2f3f6;
-  --panel: #ffffff;
-  --raised: #e9ebef;
-  --line: #d3d8e0;
-  --line-soft: #e1e5eb;
-  --text: #171b22;
-  --muted: #5b6473;
-  --faint: #98a1b0;
-  --rec: #d92d20;
-  --rec-soft: rgba(217, 45, 32, 0.10);
-  --amber: #9a6700;
-  --amber-soft: rgba(154, 103, 0, 0.10);
-  --green: #1a7f4b;
-  --green-soft: rgba(26, 127, 75, 0.12);
-  --focus-ring: rgba(23, 27, 34, 0.55);
-  --error-text: #b3261e;
+/* Dark theme — the original charcoal recording deck */
+:root[data-theme="dark"] {
+  --bg: #0d0f13;
+  --panel: #14171c;
+  --raised: #1b2027;
+  --line: #272d37;
+  --line-soft: #1f242d;
+  --text: #eaedf2;
+  --muted: #8c95a5;
+  --faint: #5d6675;
+  --rec: #ff4438;
+  --rec-soft: rgba(255, 68, 56, 0.14);
+  --amber: #f5a524;
+  --amber-soft: rgba(245, 165, 36, 0.14);
+  --green: #2fbf71;
+  --green-soft: rgba(47, 191, 113, 0.14);
+  --focus-ring: rgba(234, 237, 242, 0.7);
+  --error-text: #ff8a80;
 }
 
-/* Amber is dark in light mode, so the recover button needs light text */
-:root[data-theme="light"] .btn-recover {
+/* Amber flips from bright (dark deck) to deep gold (daylight), so the
+   recover button text flips with it */
+.btn-recover {
   color: #ffffff;
+}
+
+:root[data-theme="dark"] .btn-recover {
+  color: #1a1a1a;
+}
+
+/* Theme cross-fade — surfaces glide between day and night */
+body,
+.header,
+.status-bar,
+.tab-contents,
+.controls,
+.footer {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-toggle svg {
+  transition: transform 0.45s var(--ease-spring);
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(20deg) scale(1.08);
+}
+
+.theme-toggle:active {
+  transform: scale(0.88);
 }
