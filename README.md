@@ -9,6 +9,7 @@ A lightweight, feature-rich screen recording extension for Chromium-based browse
   - Recover footage after a tab crash, navigation, or browser restart
   - Never lose a recording again
 
+
 - 🔒 **100% Private**
   - No account, no uploads, no telemetry
   - Recordings never leave your device
